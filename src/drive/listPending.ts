@@ -1,7 +1,7 @@
 import type { drive_v3 } from 'googleapis'
-import { getEnv } from '../config/env'
-import { getDriveClient } from './client'
-import { parseFileOrder, sortByOrder } from './ordering'
+import { getEnv } from '../config/env.js'
+import { getDriveClient } from './client.js'
+import { parseFileOrder, sortByOrder } from './ordering.js'
 import {
   DRIVE_FILE_COLLECTION,
   DRIVE_FILE_PROPERTIES,
@@ -17,8 +17,8 @@ import {
   STATUS_KEY,
   STATUS_PUBLISHED,
   FIELD_SEPARATOR,
-} from '../config/constants'
-import type { PendingImage } from '../types'
+} from '../config/constants.js'
+import type { PendingImage } from '../types.js'
 
 function buildFieldsSelector(): string {
   const properties = DRIVE_FILE_PROPERTIES.join(FIELD_SEPARATOR)
