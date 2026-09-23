@@ -1,6 +1,6 @@
 # PROJECT_SCOPE - mv-social-autopost
 
-**Version:** 1.0.0
+**Version:** 1.0.1
 **Estado:** base funcional, sin desplegar
 **Ultima actualizacion:** 2026-09-23
 
@@ -41,6 +41,7 @@ Fuera del alcance por ahora:
 | Vercel Cron Job configurado (cada hora) | done |
 | Corte por tiempo antes del limite de Vercel | done |
 | Validacion de variables de entorno con Zod | done |
+| Log de variables de entorno invalidas (sin valores) | done |
 | Tests unitarios (ordering, signedUrl, pipeline) | pendiente |
 | Alertas a Discord cuando una publicacion falla | pendiente |
 | Soporte de carrusel y video | pendiente |

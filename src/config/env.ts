@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { DEFAULT_BATCH_SIZE, ESCAPED_PRIVATE_KEY_NEWLINE, REAL_NEWLINE } from './constants.js'
+import { DEFAULT_BATCH_SIZE, ESCAPED_PRIVATE_KEY_NEWLINE, FIELD_SEPARATOR, REAL_NEWLINE } from './constants.js'
 
 const MARK_STRATEGIES = ['properties', 'move'] as const
 
@@ -41,7 +41,12 @@ export function getEnv(): Env {
   const parsed = envSchema.safeParse(process.env)
 
   if (!parsed.success) {
-    const missing = parsed.error.issues.map((issue) => issue.path.join('.')).join(', ')
+    const failingVariables = parsed.error.issues.map((issue) => ({
+      variable: issue.path.join('.'),
+      code: issue.code,
+    }))
+    console.error('[Env] Invalid environment variables:', JSON.stringify(failingVariables))
+    const missing = failingVariables.map(({ variable }) => variable).join(FIELD_SEPARATOR)
     throw new Error(`Invalid environment configuration: ${missing}`)
   }
 
