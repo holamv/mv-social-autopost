@@ -1,5 +1,5 @@
-import { DECIMAL_RADIX, LEADING_NUMBER_PATTERN, UNNUMBERED_FILE_ORDER } from '../config/constants'
-import type { PendingImage } from '../types'
+import { DECIMAL_RADIX, LEADING_NUMBER_PATTERN, UNNUMBERED_FILE_ORDER } from '../config/constants.js'
+import type { PendingImage } from '../types.js'
 
 export function parseFileOrder(fileName: string): number {
   const match = LEADING_NUMBER_PATTERN.exec(fileName)
