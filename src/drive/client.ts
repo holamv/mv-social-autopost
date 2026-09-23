@@ -1,6 +1,6 @@
 import { google, type drive_v3 } from 'googleapis'
-import { getEnv } from '../config/env'
-import { DRIVE_API_VERSION, DRIVE_SCOPE } from '../config/constants'
+import { getEnv } from '../config/env.js'
+import { DRIVE_API_VERSION, DRIVE_SCOPE } from '../config/constants.js'
 
 let cachedClient: drive_v3.Drive | null = null
 
