@@ -1,4 +1,4 @@
-import { getDriveClient } from './client'
+import { getDriveClient } from './client.js'
 import {
   DRIVE_MOVE_PROPERTIES,
   DRIVE_PARENTS_FIELD,
@@ -7,8 +7,8 @@ import {
   HTTP_FORBIDDEN,
   HTTP_NOT_FOUND,
   PARENT_SEPARATOR,
-} from '../config/constants'
-import type { MoveResult } from '../types'
+} from '../config/constants.js'
+import type { MoveResult } from '../types.js'
 
 export class DriveMoveError extends Error {
   constructor(
