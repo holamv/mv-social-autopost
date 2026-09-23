@@ -8,6 +8,17 @@ Las 11 primeras son obligatorias: si falta cualquiera, la funcion responde 500 y
 los logs aparece `Invalid environment configuration` con el nombre de la que falta.
 La validacion vive en [`src/config/env.ts`](../src/config/env.ts).
 
+Antes de ese error se registra una linea `[Env] Invalid environment variables:` con
+un JSON por variable (`variable`, `code`, `message`), nunca con el valor. Se busca en
+Vercel en **Logs** filtrando por `[Env]`:
+
+| `code` | Que significa |
+|---|---|
+| `invalid_type` con `Required` | La variable no existe en ese entorno |
+| `invalid_string` | Existe pero el formato es incorrecto (URL o email) |
+| `too_small` | Existe pero esta vacia |
+| `custom` | Regla cruzada, p. ej. `MARK_STRATEGY=move` sin `DRIVE_PUBLISHED_FOLDER_ID` |
+
 ## Credenciales de Google Drive
 
 | Variable | Obligatoria | De donde sale |
