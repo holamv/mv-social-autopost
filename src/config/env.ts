@@ -44,7 +44,6 @@ export function getEnv(): Env {
     const failingVariables = parsed.error.issues.map((issue) => ({
       variable: issue.path.join('.'),
       code: issue.code,
-      message: issue.message,
     }))
     console.error('[Env] Invalid environment variables:', JSON.stringify(failingVariables))
     const missing = failingVariables.map(({ variable }) => variable).join(FIELD_SEPARATOR)
