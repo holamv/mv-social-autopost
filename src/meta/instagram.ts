@@ -1,6 +1,6 @@
-import { getEnv } from '../config/env'
-import type { Deadline } from '../core/deadline'
-import { graphGet, graphPost, MetaApiError } from './client'
+import { getEnv } from '../config/env.js'
+import type { Deadline } from '../core/deadline.js'
+import { graphGet, graphPost, MetaApiError } from './client.js'
 import {
   GRAPH_MEDIA_EDGE,
   GRAPH_MEDIA_PUBLISH_EDGE,
@@ -10,7 +10,7 @@ import {
   INSTAGRAM_STATUS_ERROR,
   INSTAGRAM_STATUS_FIELD,
   INSTAGRAM_STATUS_FINISHED,
-} from '../config/constants'
+} from '../config/constants.js'
 
 const IMAGE_URL_PARAM = 'image_url'
 const CAPTION_PARAM = 'caption'
