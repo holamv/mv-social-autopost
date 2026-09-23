@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { DEFAULT_BATCH_SIZE, ESCAPED_PRIVATE_KEY_NEWLINE, REAL_NEWLINE } from './constants'
+import { DEFAULT_BATCH_SIZE, ESCAPED_PRIVATE_KEY_NEWLINE, REAL_NEWLINE } from './constants.js'
 
 const MARK_STRATEGIES = ['properties', 'move'] as const
 
