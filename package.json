@@ -1,0 +1,23 @@
+{
+  "name": "mv-social-autopost",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "deploy:staging": "vercel deploy",
+    "deploy:production": "vercel deploy --prod"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@vercel/node": "^3.2.24",
+    "typescript": "^5.6.3"
+  }
+}
