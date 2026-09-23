@@ -2,7 +2,7 @@ import {
   DEADLINE_SAFETY_SECONDS,
   FUNCTION_MAX_DURATION_SECONDS,
   MS_PER_SECOND,
-} from '../config/constants'
+} from '../config/constants.js'
 
 export interface Deadline {
   remainingMs: () => number
