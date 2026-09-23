@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { getEnv } from '../config/env'
+import { getEnv } from '../config/env.js'
 import {
   MEDIA_EXPIRES_PARAM,
   MEDIA_FILE_PARAM,
@@ -11,7 +11,7 @@ import {
   SIGNATURE_ALGORITHM,
   SIGNATURE_ENCODING,
   SIGNATURE_SEPARATOR,
-} from '../config/constants'
+} from '../config/constants.js'
 
 function sign(fileId: string, expiresAt: number, secret: string): string {
   return createHmac(SIGNATURE_ALGORITHM, secret)
