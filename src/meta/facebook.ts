@@ -1,8 +1,8 @@
-import { getEnv } from '../config/env'
-import { graphUpload } from './client'
-import { toUploadBlob } from '../drive/download'
-import { GRAPH_PHOTOS_EDGE } from '../config/constants'
-import type { DriveImage } from '../types'
+import { getEnv } from '../config/env.js'
+import { graphUpload } from './client.js'
+import { toUploadBlob } from '../drive/download.js'
+import { GRAPH_PHOTOS_EDGE } from '../config/constants.js'
+import type { DriveImage } from '../types.js'
 
 const SOURCE_PARAM = 'source'
 const CAPTION_PARAM = 'caption'
