@@ -1,10 +1,10 @@
-import { getEnv } from '../config/env'
+import { getEnv } from '../config/env.js'
 import {
   GRAPH_API_VERSION,
   GRAPH_BASE_URL,
   HTTP_METHOD_GET,
   HTTP_METHOD_POST,
-} from '../config/constants'
+} from '../config/constants.js'
 
 const ACCESS_TOKEN_PARAM = 'access_token'
 const FIELDS_PARAM = 'fields'
