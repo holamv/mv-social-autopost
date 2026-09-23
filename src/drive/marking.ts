@@ -1,7 +1,7 @@
 import type { drive_v3 } from 'googleapis'
-import { getEnv } from '../config/env'
-import { getDriveClient } from './client'
-import { moveFile } from './move'
+import { getEnv } from '../config/env.js'
+import { getDriveClient } from './client.js'
+import { moveFile } from './move.js'
 import {
   FACEBOOK_POST_ID_KEY,
   INSTAGRAM_MEDIA_ID_KEY,
@@ -9,7 +9,7 @@ import {
   PUBLISHED_AT_KEY,
   STATUS_KEY,
   STATUS_PUBLISHED,
-} from '../config/constants'
+} from '../config/constants.js'
 
 const MOVE_STRATEGY = 'move'
 
