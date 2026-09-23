@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getEnv } from '../../src/config/env'
-import { createDeadline } from '../../src/core/deadline'
-import { runPublishCycle } from '../../src/core/pipeline'
+import { getEnv } from '../../src/config/env.js'
+import { createDeadline } from '../../src/core/deadline.js'
+import { runPublishCycle } from '../../src/core/pipeline.js'
 import {
   AUTHORIZATION_HEADER,
   BEARER_PREFIX,
@@ -11,8 +11,8 @@ import {
   HTTP_MULTI_STATUS,
   HTTP_OK,
   HTTP_UNAUTHORIZED,
-} from '../../src/config/constants'
-import type { ApiResponse, PublishRunSummary } from '../../src/types'
+} from '../../src/config/constants.js'
+import type { ApiResponse, PublishRunSummary } from '../../src/types.js'
 
 const UNAUTHORIZED_MESSAGE = 'No autorizado'
 const METHOD_MESSAGE = 'Metodo no permitido'
