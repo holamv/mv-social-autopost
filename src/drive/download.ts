@@ -1,5 +1,5 @@
 import type { drive_v3 } from 'googleapis'
-import { getDriveClient } from './client'
+import { getDriveClient } from './client.js'
 import {
   BYTES_PER_MEGABYTE,
   DEFAULT_MIME_TYPE,
@@ -8,8 +8,8 @@ import {
   FIELD_SEPARATOR,
   IMAGE_MIME_PREFIX,
   MAX_IMAGE_MEGABYTES,
-} from '../config/constants'
-import type { DriveImage } from '../types'
+} from '../config/constants.js'
+import type { DriveImage } from '../types.js'
 
 export class DriveDownloadError extends Error {
   constructor(message: string) {
