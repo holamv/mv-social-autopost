@@ -10,25 +10,42 @@ export interface ApiResponse<T> {
   }
 }
 
+export type Channel = 'facebook' | 'instagram'
+
+export type ChannelPostIds = Partial<Record<Channel, string>>
+
 export interface PendingImage {
   id: string
   name: string
   order: number
   caption: string
   lockedAt: string | null
-  facebookPostId: string | null
+  postIds: ChannelPostIds
+}
+
+export interface PublishRoute {
+  label: string
+  sourceFolderId: string
+  channels: Channel[]
+  publishedFolderId: string | null
+}
+
+export interface RouteQueue {
+  route: PublishRoute
+  pending: PendingImage[]
 }
 
 export interface PublishedImage {
   fileId: string
   name: string
-  facebookPostId: string
-  instagramMediaId: string
+  route: string
+  postIds: ChannelPostIds
 }
 
 export interface FailedImage {
   fileId: string
   name: string
+  route: string
   error: string
 }
 

@@ -8,7 +8,7 @@ import {
   DRIVE_MAX_PAGES,
   DRIVE_PAGE_TOKEN_FIELD,
   DRIVE_PAGE_SIZE,
-  FACEBOOK_POST_ID_KEY,
+  CHANNEL_POST_ID_KEYS,
   IMAGE_MIME_PREFIX,
   LOCKED_AT_KEY,
   LOCK_TTL_MINUTES,
@@ -18,7 +18,7 @@ import {
   STATUS_PUBLISHED,
   FIELD_SEPARATOR,
 } from '../config/constants.js'
-import type { PendingImage } from '../types.js'
+import type { Channel, ChannelPostIds, PendingImage } from '../types.js'
 
 function buildFieldsSelector(): string {
   const properties = DRIVE_FILE_PROPERTIES.join(FIELD_SEPARATOR)
@@ -35,6 +35,20 @@ function buildPendingQuery(folderId: string): string {
   ].join(' and ')
 }
 
+function readPostIds(properties: Record<string, string>): ChannelPostIds {
+  const postIds: ChannelPostIds = {}
+
+  for (const [channel, key] of Object.entries(CHANNEL_POST_ID_KEYS) as [Channel, string][]) {
+    const postId = properties[key]
+
+    if (postId) {
+      postIds[channel] = postId
+    }
+  }
+
+  return postIds
+}
+
 function toPendingImage(file: drive_v3.Schema$File, defaultCaption: string): PendingImage {
   const properties = file.appProperties ?? {}
 
@@ -44,7 +58,7 @@ function toPendingImage(file: drive_v3.Schema$File, defaultCaption: string): Pen
     order: parseFileOrder(file.name ?? ''),
     caption: file.description?.trim() || defaultCaption,
     lockedAt: properties[LOCKED_AT_KEY] ?? null,
-    facebookPostId: properties[FACEBOOK_POST_ID_KEY] ?? null,
+    postIds: readPostIds(properties),
   }
 }
 
@@ -58,7 +72,7 @@ export function isLocked(image: PendingImage, now: number): boolean {
   return lockAge < LOCK_TTL_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND
 }
 
-export async function listPendingImages(): Promise<PendingImage[]> {
+export async function listPendingImages(folderId: string): Promise<PendingImage[]> {
   const env = getEnv()
   const drive = getDriveClient()
   const collected: PendingImage[] = []
@@ -66,7 +80,7 @@ export async function listPendingImages(): Promise<PendingImage[]> {
 
   for (let page = 0; page < DRIVE_MAX_PAGES; page += 1) {
     const response = await drive.files.list({
-      q: buildPendingQuery(env.DRIVE_SOURCE_FOLDER_ID),
+      q: buildPendingQuery(folderId),
       fields: buildFieldsSelector(),
       pageSize: DRIVE_PAGE_SIZE,
       pageToken,

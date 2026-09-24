@@ -1,8 +1,7 @@
 import { waitUntil } from '@vercel/functions'
 import { EnvConfigError, getEnv } from '../config/env.js'
 import { createDeadline } from '../core/deadline.js'
-import { runPublishCycle } from '../core/pipeline.js'
-import { listPendingImages } from '../drive/listPending.js'
+import { listQueues, runPublishCycle } from '../core/pipeline.js'
 import { canPublish, type InteractionMember } from './access.js'
 import { editOriginalResponse } from './api.js'
 import { PUBLISH_NOW_COMMAND, STATUS_COMMAND } from './commandDefinitions.js'
@@ -35,7 +34,7 @@ export interface InteractionResponse {
 
 async function replyWithQueueStatus(token: string): Promise<void> {
   try {
-    await editOriginalResponse(token, formatQueueStatus(await listPendingImages()))
+    await editOriginalResponse(token, formatQueueStatus(await listQueues()))
   } catch (error) {
     console.error('[DiscordStatus] Error leyendo la cola:', error)
     await editOriginalResponse(token, describeFailure(error, STATUS_ERROR_MESSAGE))
