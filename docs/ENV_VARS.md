@@ -70,6 +70,7 @@ responde 500. Ver [DISCORD_BOT.md](DISCORD_BOT.md).
 |---|---|---|
 | `DISCORD_APPLICATION_ID` | Vercel | Portal de Discord → General Information |
 | `DISCORD_PUBLIC_KEY` | Vercel | Portal de Discord → General Information |
+| `DISCORD_PUBLISHER_IDS` | Vercel, opcional | IDs de usuario o rol de Discord que pueden usar `/publicar-ahora`, separados por coma. Los administradores siempre pueden |
 | `DISCORD_BOT_TOKEN` | Solo tu maquina, para `npm run discord:register` | Portal de Discord → Bot → Reset Token |
 | `DISCORD_GUILD_ID` | Solo tu maquina | ID del servidor de MV: `619991595613290496` |
 
