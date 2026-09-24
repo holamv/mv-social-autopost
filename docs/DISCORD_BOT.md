@@ -28,6 +28,21 @@ Discord → POST /api/discord/interactions   ← firmado con Ed25519
 `mvFacebookPostId`), asi que si coincide con una corrida programada no publica dos
 veces la misma imagen.
 
+## Estado actual
+
+| Item | Valor |
+|---|---|
+| Aplicacion | `mv-social-autopost`, ID `1552700543292543106` |
+| Servidor | manzanaverde (`619991595613290496`) |
+| Interactions Endpoint URL | `https://mv-social-autopost.vercel.app/api/discord/interactions` |
+| Comandos registrados | `/estado`, `/publicar-ahora` (2026-09-24) |
+| Variables en Vercel | `DISCORD_APPLICATION_ID`, `DISCORD_PUBLIC_KEY` (Production + Preview) |
+
+El rol `mv-social-autopost` **no** tiene Administrador, Gestionar servidor ni
+Gestionar roles, verificado el 2026-09-24. Asi el bot no puede aprobar otros bots,
+tocar integraciones ni asignar roles. Si se cambian sus permisos, mantener esos
+tres apagados.
+
 ## Puesta en marcha
 
 Los pasos 1, 4 y 5 los hace una persona con acceso: no se pueden automatizar.
@@ -68,7 +83,9 @@ https://discord.com/oauth2/authorize?client_id=<DISCORD_APPLICATION_ID>&scope=ap
 ```
 
 Pide solo `applications.commands`: el bot no lee mensajes ni tiene permisos sobre
-canales.
+canales. Para darle permisos de servidor se agrega `bot` al scope y un valor
+`permissions`; en ese caso dejar afuera Administrador, Gestionar servidor y
+Gestionar roles.
 
 ### 5. Registrar los comandos
 

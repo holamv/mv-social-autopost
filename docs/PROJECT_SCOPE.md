@@ -1,7 +1,7 @@
 # PROJECT_SCOPE - mv-social-autopost
 
-**Version:** 1.1.0
-**Estado:** base funcional, sin desplegar
+**Version:** 1.1.1
+**Estado:** desplegado en produccion (Vercel), bot de Discord activo en el servidor de MV
 **Ultima actualizacion:** 2026-09-24
 
 ## Objetivo
@@ -42,7 +42,7 @@ Fuera del alcance por ahora:
 | Vercel Cron Job configurado (cada hora) | done |
 | Corte por tiempo antes del limite de Vercel | done |
 | Validacion de variables de entorno con Zod | done |
-| Bot de Discord: `/estado` y `/publicar-ahora` por HTTP interactions | done (falta crear la app y agregarla al servidor) |
+| Bot de Discord: `/estado` y `/publicar-ahora` por HTTP interactions | done: app `1552700543292543106` en el servidor de MV, comandos registrados |
 | Tests unitarios (ordering, signedUrl, pipeline, discord) | pendiente |
 | Alertas a Discord cuando una publicacion falla | pendiente |
 | Soporte de carrusel y video | pendiente |
