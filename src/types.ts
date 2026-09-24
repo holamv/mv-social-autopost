@@ -10,7 +10,7 @@ export interface ApiResponse<T> {
   }
 }
 
-export type Channel = 'facebook' | 'instagram'
+export type Channel = 'facebook' | 'instagram' | 'linkedin'
 
 export type ChannelPostIds = Partial<Record<Channel, string>>
 
@@ -19,15 +19,20 @@ export interface PendingImage {
   name: string
   order: number
   caption: string
+  mimeType: string
+  sizeBytes: number
   lockedAt: string | null
   postIds: ChannelPostIds
+  linkedInMediaUrn: string | null
 }
 
 export interface PublishRoute {
   label: string
   sourceFolderId: string
   channels: Channel[]
+  mimePrefixes: string[]
   publishedFolderId: string | null
+  disabledReason: string | null
 }
 
 export interface RouteQueue {
