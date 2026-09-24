@@ -45,10 +45,6 @@ async function publishImage(image: PendingImage, route: PublishRoute, deadline: 
 }
 
 async function publishQueue(queue: RouteQueue, deadline: Deadline, outcome: BatchOutcome): Promise<void> {
-  if (queue.route.disabledReason) {
-    return
-  }
-
   for (const image of queue.pending.slice(0, getEnv().BATCH_SIZE)) {
     if (deadline.isExpired()) {
       outcome.skipped += 1
@@ -68,7 +64,7 @@ async function publishQueue(queue: RouteQueue, deadline: Deadline, outcome: Batc
 export async function listQueues(): Promise<RouteQueue[]> {
   const routes = await resolveRoutes()
 
-  return Promise.all(routes.map(async (route) => ({ route, pending: await listPendingImages(route.sourceFolderId, route.mimePrefixes) })))
+  return Promise.all(routes.map(async (route) => ({ route, pending: await listPendingImages(route.sourceFolderId) })))
 }
 
 export async function runPublishCycle(deadline: Deadline): Promise<ApiResponse<PublishRunSummary>> {

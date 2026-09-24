@@ -61,20 +61,6 @@ necesita alcanzar `/api/media`.
 | `BATCH_SIZE` | no | `1` | Imagenes por ejecucion |
 | `DEFAULT_CAPTION` | no | vacio | Texto a usar cuando el archivo no tiene descripcion en Drive |
 
-## LinkedIn
-
-Opcionales. Sin `LINKEDIN_ORGANIZATION_ID` y un token, la carpeta `LinkedIn/` no se
-publica. Ver README, seccion 2b.
-
-| Variable | Obligatoria | De donde sale |
-|---|---|---|
-| `LINKEDIN_ORGANIZATION_ID` | para LinkedIn | Numero en `linkedin.com/company/<numero>/admin` |
-| `LINKEDIN_ACCESS_TOKEN` | para LinkedIn, salvo que haya refresh | Token con `w_organization_social` de un admin de la pagina (60 dias) |
-| `LINKEDIN_CLIENT_ID` | no | App de LinkedIn → Auth |
-| `LINKEDIN_CLIENT_SECRET` | no | App de LinkedIn → Auth |
-| `LINKEDIN_REFRESH_TOKEN` | no | Solo si LinkedIn aprobo refresh tokens para la app (1 año) |
-| `LINKEDIN_API_VERSION` | no, default `202609` | Version `YYYYMM` de la API. LinkedIn retira cada version al año |
-
 ## Bot de Discord
 
 Opcionales: si faltan, el cron sigue funcionando y solo `/api/discord/interactions`

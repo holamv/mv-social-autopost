@@ -1,39 +1,18 @@
-import { getEnv, type Env } from '../config/env.js'
-import {
-  FACEBOOK_FOLDER_NAME,
-  IMAGE_MIME_PREFIX,
-  INSTAGRAM_FOLDER_NAME,
-  LINKEDIN_FOLDER_NAME,
-  ROOT_ROUTE_LABEL,
-  VIDEO_MIME_PREFIX,
-} from '../config/constants.js'
-import { linkedInDisabledReason } from '../linkedin/client.js'
+import { getEnv } from '../config/env.js'
+import { FACEBOOK_FOLDER_NAME, INSTAGRAM_FOLDER_NAME, ROOT_ROUTE_LABEL } from '../config/constants.js'
 import { findChildFolder } from '../drive/folders.js'
 import type { Channel, PublishRoute } from '../types.js'
 
 const MOVE_STRATEGY = 'move'
 
-const IMAGES_ONLY = [IMAGE_MIME_PREFIX]
-const IMAGES_AND_VIDEOS = [IMAGE_MIME_PREFIX, VIDEO_MIME_PREFIX]
-
 interface ChannelFolder {
   folderName: string
   channels: Channel[]
-  mimePrefixes: string[]
-  disabledReason: (env: Env) => string | null
 }
 
-const ALWAYS_ENABLED = (): null => null
-
 const CHANNEL_FOLDERS: ChannelFolder[] = [
-  { folderName: FACEBOOK_FOLDER_NAME, channels: ['facebook'], mimePrefixes: IMAGES_ONLY, disabledReason: ALWAYS_ENABLED },
-  { folderName: INSTAGRAM_FOLDER_NAME, channels: ['instagram'], mimePrefixes: IMAGES_ONLY, disabledReason: ALWAYS_ENABLED },
-  {
-    folderName: LINKEDIN_FOLDER_NAME,
-    channels: ['linkedin'],
-    mimePrefixes: IMAGES_AND_VIDEOS,
-    disabledReason: linkedInDisabledReason,
-  },
+  { folderName: FACEBOOK_FOLDER_NAME, channels: ['facebook'] },
+  { folderName: INSTAGRAM_FOLDER_NAME, channels: ['instagram'] },
 ]
 
 const ROOT_CHANNELS: Channel[] = ['facebook', 'instagram']
@@ -67,9 +46,7 @@ async function resolveChannelRoute(
     label: channelFolder.folderName,
     sourceFolderId,
     channels: channelFolder.channels,
-    mimePrefixes: channelFolder.mimePrefixes,
     publishedFolderId: await resolvePublishedChild(publishedRootId, channelFolder.folderName),
-    disabledReason: channelFolder.disabledReason(getEnv()),
   }
 }
 
@@ -81,9 +58,7 @@ export async function resolveRoutes(): Promise<PublishRoute[]> {
     label: ROOT_ROUTE_LABEL,
     sourceFolderId: env.DRIVE_SOURCE_FOLDER_ID,
     channels: ROOT_CHANNELS,
-    mimePrefixes: IMAGES_ONLY,
     publishedFolderId: publishedRootId,
-    disabledReason: null,
   }
 
   const channelRoutes = await Promise.all(
