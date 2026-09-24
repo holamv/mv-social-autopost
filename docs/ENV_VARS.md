@@ -15,14 +15,17 @@ La validacion vive en [`src/config/env.ts`](../src/config/env.ts).
 | `GOOGLE_CLIENT_EMAIL` | si | Campo `client_email` del JSON de la cuenta de servicio |
 | `GOOGLE_PRIVATE_KEY` | si | Campo `private_key` del mismo JSON, con los `-----BEGIN PRIVATE KEY-----` incluidos |
 
-`GOOGLE_PRIVATE_KEY` tiene saltos de linea. En Vercel se pega completa tal cual. Si
-el valor queda con `\n` escapados, el codigo los convierte solo.
+`GOOGLE_PRIVATE_KEY` tiene saltos de linea. En Vercel se pega completa tal cual. El
+codigo tolera los errores comunes al pegarla: `\n` escapados, comillas alrededor,
+espacios sobrantes, o el JSON entero de la cuenta de servicio (toma `private_key`).
+Si aun asi no es una clave legible, la funcion falla al arrancar nombrando
+`GOOGLE_PRIVATE_KEY`, y el bot de Discord lo dice en su respuesta.
 
 ## IDs de carpetas de Drive
 
 | Variable | Obligatoria | De donde sale |
 |---|---|---|
-| `DRIVE_SOURCE_FOLDER_ID` | si | Lo que aparece en la URL despues de `/folders/` |
+| `DRIVE_SOURCE_FOLDER_ID` | si | Lo que aparece en la URL despues de `/folders/` y antes de cualquier `?` (sin `?hl=es-419`) |
 | `DRIVE_PUBLISHED_FOLDER_ID` | solo si `MARK_STRATEGY='move'` | Igual, en la carpeta "Publicados" |
 | `MARK_STRATEGY` | no, default `properties` | `properties` marca y deja el archivo; `move` ademas lo mueve |
 

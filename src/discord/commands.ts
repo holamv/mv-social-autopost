@@ -1,4 +1,5 @@
 import { waitUntil } from '@vercel/functions'
+import { EnvConfigError, getEnv } from '../config/env.js'
 import { createDeadline } from '../core/deadline.js'
 import { runPublishCycle } from '../core/pipeline.js'
 import { listPendingImages } from '../drive/listPending.js'
@@ -10,8 +11,10 @@ import {
   RESPONSE_TYPE_DEFERRED_CHANNEL_MESSAGE,
 } from './constants.js'
 import {
+  PUBLISH_ERROR_MESSAGE,
   STATUS_ERROR_MESSAGE,
   UNKNOWN_COMMAND_MESSAGE,
+  formatConfigError,
   formatPublishResult,
   formatQueueStatus,
 } from './messages.js'
@@ -31,11 +34,23 @@ async function replyWithQueueStatus(token: string): Promise<void> {
     await editOriginalResponse(token, formatQueueStatus(await listPendingImages()))
   } catch (error) {
     console.error('[DiscordStatus] Error leyendo la cola:', error)
-    await editOriginalResponse(token, STATUS_ERROR_MESSAGE)
+    await editOriginalResponse(token, describeFailure(error, STATUS_ERROR_MESSAGE))
   }
 }
 
+function describeFailure(error: unknown, fallback: string): string {
+  return error instanceof EnvConfigError ? formatConfigError(error.variables) : fallback
+}
+
 async function replyWithPublishResult(token: string): Promise<void> {
+  try {
+    getEnv()
+  } catch (error) {
+    console.error('[DiscordPublish] Error de configuracion:', error)
+    await editOriginalResponse(token, describeFailure(error, PUBLISH_ERROR_MESSAGE))
+    return
+  }
+
   const startedAt = Date.now()
   const result = await runPublishCycle(createDeadline())
 

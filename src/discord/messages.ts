@@ -5,6 +5,12 @@ export const UNKNOWN_COMMAND_MESSAGE = 'No conozco ese comando.'
 export const STATUS_ERROR_MESSAGE = 'No pude leer la carpeta de Drive. Revisa los logs en Vercel.'
 export const PUBLISH_ERROR_MESSAGE = 'La publicacion fallo antes de empezar. Revisa los logs en Vercel.'
 
+export function formatConfigError(variables: string[]): string {
+  const names = variables.map((name) => `\`${name}\``).join(', ')
+
+  return `Hay variables mal configuradas en Vercel: ${names}. Corrigelas en Settings → Environment Variables y redeploya.`
+}
+
 function fitToDiscord(content: string): string {
   if (content.length <= MESSAGE_CONTENT_MAX_LENGTH) {
     return content
