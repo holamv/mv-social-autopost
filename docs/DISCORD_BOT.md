@@ -5,7 +5,7 @@ Permite manejar la publicacion desde el Discord de Manzana Verde sin esperar al 
 | Comando | Quien puede usarlo | Que hace |
 |---|---|---|
 | `/estado` | Cualquier miembro | Muestra cuantas imagenes quedan y las 5 proximas. Solo lo ve quien lo pide |
-| `/publicar-ahora` | Solo administradores, salvo que un admin lo habilite para un rol | Corre un ciclo de publicacion igual al del cron y deja el resultado en el canal |
+| `/publicar-ahora` | Administradores y los IDs de usuario o rol en `DISCORD_PUBLISHER_IDS` | Corre un ciclo de publicacion igual al del cron y deja el resultado en el canal |
 
 ## Como funciona
 
@@ -86,6 +86,11 @@ si cambian los comandos en `src/discord/commandDefinitions.ts`.
 
 ### 6. Dar acceso a `/publicar-ahora`
 
-Por defecto solo lo ven los administradores. Para habilitarlo a un rol (por ejemplo
-Marketing): **Ajustes del servidor → Integraciones → MV Social Autopost →
-`/publicar-ahora` → agregar rol**.
+El comando se ve para todos, pero el bot solo publica si quien lo usa es
+administrador o si su ID de usuario, o el de alguno de sus roles, esta en
+`DISCORD_PUBLISHER_IDS` (Vercel, separados por coma). El resto recibe un aviso que
+solo ve esa persona.
+
+Para sacar un ID: Discord → Ajustes → Avanzado → activar **Modo desarrollador**, y
+despues clic derecho sobre la persona o el rol → **Copiar ID**. Cambiar la lista
+requiere redeploy, no volver a registrar comandos.

@@ -44,6 +44,7 @@ Fuera del alcance por ahora:
 | Validacion de variables de entorno con Zod | done |
 | Tolerancia de formato en `GOOGLE_PRIVATE_KEY` y validacion de IDs de carpeta | done |
 | Bot informa en Discord que variable esta mal configurada | done |
+| `/publicar-ahora` habilitado por lista de usuarios o roles (`DISCORD_PUBLISHER_IDS`) | done |
 | Bot de Discord: `/estado` y `/publicar-ahora` por HTTP interactions | done (falta crear la app y agregarla al servidor) |
 | Tests unitarios (ordering, signedUrl, pipeline, discord) | pendiente |
 | Alertas a Discord cuando una publicacion falla | pendiente |
@@ -60,6 +61,7 @@ src/config/env.ts          Schema Zod de entorno
 src/config/privateKey.ts   Normalizacion y validacion de la clave de Google
 src/core/deadline.ts       Presupuesto de tiempo
 src/core/pipeline.ts       Orquestacion del ciclo
+src/discord/access.ts      Quien puede usar /publicar-ahora
 src/discord/api.ts         Edicion de la respuesta diferida
 src/discord/commandDefinitions.ts  Nombres y definiciones de comandos
 src/discord/commands.ts    Ejecucion de cada comando

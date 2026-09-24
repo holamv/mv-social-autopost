@@ -3,8 +3,10 @@ import { EnvConfigError, getEnv } from '../config/env.js'
 import { createDeadline } from '../core/deadline.js'
 import { runPublishCycle } from '../core/pipeline.js'
 import { listPendingImages } from '../drive/listPending.js'
+import { canPublish, type InteractionMember } from './access.js'
 import { editOriginalResponse } from './api.js'
 import { PUBLISH_NOW_COMMAND, STATUS_COMMAND } from './commandDefinitions.js'
+import { getDiscordEnv } from './env.js'
 import {
   MESSAGE_FLAG_EPHEMERAL,
   RESPONSE_TYPE_CHANNEL_MESSAGE,
@@ -12,6 +14,7 @@ import {
 } from './constants.js'
 import {
   PUBLISH_ERROR_MESSAGE,
+  PUBLISH_FORBIDDEN_MESSAGE,
   STATUS_ERROR_MESSAGE,
   UNKNOWN_COMMAND_MESSAGE,
   formatConfigError,
@@ -22,6 +25,7 @@ import {
 export interface CommandInteraction {
   token: string
   data: { name: string }
+  member?: InteractionMember
 }
 
 export interface InteractionResponse {
@@ -58,18 +62,27 @@ async function replyWithPublishResult(token: string): Promise<void> {
   await editOriginalResponse(token, formatPublishResult(result))
 }
 
+function ephemeralReply(content: string): InteractionResponse {
+  return { type: RESPONSE_TYPE_CHANNEL_MESSAGE, data: { content, flags: MESSAGE_FLAG_EPHEMERAL } }
+}
+
+function startPublish(interaction: CommandInteraction): InteractionResponse {
+  if (!canPublish(interaction.member, getDiscordEnv().DISCORD_PUBLISHER_IDS)) {
+    return ephemeralReply(PUBLISH_FORBIDDEN_MESSAGE)
+  }
+
+  waitUntil(replyWithPublishResult(interaction.token))
+  return { type: RESPONSE_TYPE_DEFERRED_CHANNEL_MESSAGE }
+}
+
 export function handleCommand(interaction: CommandInteraction): InteractionResponse {
   switch (interaction.data.name) {
     case STATUS_COMMAND:
       waitUntil(replyWithQueueStatus(interaction.token))
       return { type: RESPONSE_TYPE_DEFERRED_CHANNEL_MESSAGE, data: { flags: MESSAGE_FLAG_EPHEMERAL } }
     case PUBLISH_NOW_COMMAND:
-      waitUntil(replyWithPublishResult(interaction.token))
-      return { type: RESPONSE_TYPE_DEFERRED_CHANNEL_MESSAGE }
+      return startPublish(interaction)
     default:
-      return {
-        type: RESPONSE_TYPE_CHANNEL_MESSAGE,
-        data: { content: UNKNOWN_COMMAND_MESSAGE, flags: MESSAGE_FLAG_EPHEMERAL },
-      }
+      return ephemeralReply(UNKNOWN_COMMAND_MESSAGE)
   }
 }

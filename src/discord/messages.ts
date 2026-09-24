@@ -2,6 +2,8 @@ import type { ApiResponse, PendingImage, PublishRunSummary } from '../types.js'
 import { LINE_BREAK, MESSAGE_CONTENT_MAX_LENGTH, QUEUE_PREVIEW_SIZE, TRUNCATION_SUFFIX } from './constants.js'
 
 export const UNKNOWN_COMMAND_MESSAGE = 'No conozco ese comando.'
+export const PUBLISH_FORBIDDEN_MESSAGE =
+  'No tienes permiso para publicar. Pide a un admin que agregue tu ID o tu rol a DISCORD_PUBLISHER_IDS.'
 export const STATUS_ERROR_MESSAGE = 'No pude leer la carpeta de Drive. Revisa los logs en Vercel.'
 export const PUBLISH_ERROR_MESSAGE = 'La publicacion fallo antes de empezar. Revisa los logs en Vercel.'
 
