@@ -3,6 +3,7 @@ import { getDriveClient } from './client.js'
 import { moveFile } from './move.js'
 import {
   CHANNEL_POST_ID_KEYS,
+  LINKEDIN_MEDIA_URN_KEY,
   LOCKED_AT_KEY,
   PUBLISHED_AT_KEY,
   STATUS_KEY,
@@ -29,6 +30,10 @@ export async function releaseImage(fileId: string): Promise<void> {
 
 export async function storeChannelPostId(fileId: string, channel: Channel, postId: string): Promise<void> {
   await patchAppProperties(fileId, { [CHANNEL_POST_ID_KEYS[channel]]: postId })
+}
+
+export async function storeLinkedInMediaUrn(fileId: string, mediaUrn: string): Promise<void> {
+  await patchAppProperties(fileId, { [LINKEDIN_MEDIA_URN_KEY]: mediaUrn })
 }
 
 export async function markAsPublished(fileId: string, route: PublishRoute): Promise<void> {

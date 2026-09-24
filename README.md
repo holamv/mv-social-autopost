@@ -47,11 +47,12 @@ Dentro de la carpeta de origen se puede elegir en que red sale cada archivo:
 ```
 Carpeta de origen
 ├── foto-suelta.jpg   → Facebook + Instagram
-├── Facebook/         → solo Facebook
-└── Instagram/        → solo Instagram
+├── Facebook/         → solo Facebook (imagenes)
+├── Instagram/        → solo Instagram (imagenes)
+└── LinkedIn/         → solo LinkedIn (imagenes y videos MP4)
 ```
 
-- Los nombres de las subcarpetas son exactos: `Facebook` e `Instagram`. Si una no
+- Los nombres de las subcarpetas son exactos: `Facebook`, `Instagram` y `LinkedIn`. Si una no
   existe, esa cola simplemente no se procesa.
 - Cada corrida publica hasta `BATCH_SIZE` archivos **por cola**, en orden numerico.
 - Con `MARK_STRATEGY='move'`, lo publicado se mueve a `Publicados/` (sueltas) o a
@@ -188,6 +189,28 @@ Pasos:
 7. Mientras la app este en modo desarrollo solo funciona con cuentas que figuren
    como administradoras. Para uso real hay que pasarla a **modo Live** y completar
    la **verificacion del negocio**.
+
+## 2b. Configurar LinkedIn (opcional)
+
+Publica en la pagina de empresa de Manzana Verde. Sin estas variables la carpeta
+`LinkedIn/` se ignora y `/estado` lo avisa.
+
+1. En [linkedin.com/developers](https://www.linkedin.com/developers/apps) crear una app
+   asociada a la pagina de MV y verificarla desde la pagina.
+2. En **Products**, pedir **Community Management API**. LinkedIn revisa la solicitud
+   (puede tardar dias o semanas).
+3. Una persona con rol **ADMINISTRATOR** o **CONTENT_ADMIN** de la pagina autoriza la app
+   con el scope `w_organization_social` y se guarda el access token (dura 60 dias).
+4. `LINKEDIN_ORGANIZATION_ID` es el numero de la URL de administracion de la pagina
+   (`linkedin.com/company/<numero>/admin`).
+5. Para no renovar a mano cada 60 dias: si LinkedIn aprueba tokens de renovacion para
+   la app, cargar `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` y `LINKEDIN_REFRESH_TOKEN`
+   (dura 1 año) y el servicio pide un access token nuevo solo.
+
+Limites: imagenes JPG, PNG o GIF; videos MP4 de hasta `MAX_VIDEO_MEGABYTES` (200 MB)
+y de 3 s a 30 min. Un video se sube por partes de 4 MB directo desde Drive, sin
+cargarlo entero en memoria. Si LinkedIn sigue procesandolo al final de la corrida,
+el ID del video queda guardado y la corrida siguiente publica sin volver a subirlo.
 
 ## 3. Variables de entorno
 
