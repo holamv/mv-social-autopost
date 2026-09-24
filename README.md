@@ -75,11 +75,13 @@ mira la carpeta, no ensucian el nombre ni el contenido del archivo.
 api/
   cron/publish.ts        Funcion que dispara el cron
   media.ts               Sirve la imagen firmada a Instagram
+  discord/interactions.ts  Comandos del bot de Discord
 src/
   config/constants.ts    Todos los valores fijos
   config/env.ts          Validacion de variables de entorno con Zod
   core/deadline.ts       Presupuesto de tiempo de la ejecucion
   core/pipeline.ts       Orquestacion del ciclo completo
+  discord/               Firma, comandos y respuestas del bot
   drive/client.ts        Cliente autenticado de Google Drive
   drive/download.ts      Descarga a memoria y Blob para subida binaria
   drive/listPending.ts   Consulta y filtro de pendientes
@@ -90,8 +92,12 @@ src/
   meta/client.ts         Cliente HTTP del Graph API
   meta/facebook.ts       Publicacion en la pagina por binario
   meta/instagram.ts      Contenedor + espera + publicacion
+scripts/
+  registerDiscordCommands.ts  Registra /estado y /publicar-ahora
 vercel.json              Cron y limites de ejecucion
 ```
+
+El bot de Discord se configura aparte: ver [docs/DISCORD_BOT.md](docs/DISCORD_BOT.md).
 
 ---
 
