@@ -58,6 +58,18 @@ necesita alcanzar `/api/media`.
 | `BATCH_SIZE` | no | `1` | Imagenes por ejecucion |
 | `DEFAULT_CAPTION` | no | vacio | Texto a usar cuando el archivo no tiene descripcion en Drive |
 
+## Bot de Discord
+
+Opcionales: si faltan, el cron sigue funcionando y solo `/api/discord/interactions`
+responde 500. Ver [DISCORD_BOT.md](DISCORD_BOT.md).
+
+| Variable | Donde va | De donde sale |
+|---|---|---|
+| `DISCORD_APPLICATION_ID` | Vercel | Portal de Discord → General Information |
+| `DISCORD_PUBLIC_KEY` | Vercel | Portal de Discord → General Information |
+| `DISCORD_BOT_TOKEN` | Solo tu maquina, para `npm run discord:register` | Portal de Discord → Bot → Reset Token |
+| `DISCORD_GUILD_ID` | Solo tu maquina | ID del servidor de MV: `619991595613290496` |
+
 ## Checklist antes del primer deploy
 
 1. Las 11 variables obligatorias cargadas en **Production**.

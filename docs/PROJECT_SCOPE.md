@@ -1,8 +1,8 @@
 # PROJECT_SCOPE - mv-social-autopost
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Estado:** base funcional, sin desplegar
-**Ultima actualizacion:** 2026-09-23
+**Ultima actualizacion:** 2026-09-24
 
 ## Objetivo
 
@@ -18,6 +18,7 @@ Dentro del alcance:
 - Publicacion de imagen unica con texto en Facebook e Instagram.
 - Marcado idempotente en Drive (`appProperties`) y movimiento opcional de carpeta.
 - Disparo por Vercel Cron Job con secreto compartido.
+- Bot de Discord con `/estado` y `/publicar-ahora` (ver `docs/DISCORD_BOT.md`).
 
 Fuera del alcance por ahora:
 - Carruseles, Reels, Stories y video.
@@ -41,7 +42,8 @@ Fuera del alcance por ahora:
 | Vercel Cron Job configurado (cada hora) | done |
 | Corte por tiempo antes del limite de Vercel | done |
 | Validacion de variables de entorno con Zod | done |
-| Tests unitarios (ordering, signedUrl, pipeline) | pendiente |
+| Bot de Discord: `/estado` y `/publicar-ahora` por HTTP interactions | done (falta crear la app y agregarla al servidor) |
+| Tests unitarios (ordering, signedUrl, pipeline, discord) | pendiente |
 | Alertas a Discord cuando una publicacion falla | pendiente |
 | Soporte de carrusel y video | pendiente |
 
@@ -50,10 +52,18 @@ Fuera del alcance por ahora:
 ```
 api/cron/publish.ts        Handler del cron
 api/media.ts               Handler de la imagen firmada
+api/discord/interactions.ts  Endpoint de comandos de Discord
 src/config/constants.ts    Valores fijos
 src/config/env.ts          Schema Zod de entorno
 src/core/deadline.ts       Presupuesto de tiempo
 src/core/pipeline.ts       Orquestacion del ciclo
+src/discord/api.ts         Edicion de la respuesta diferida
+src/discord/commandDefinitions.ts  Nombres y definiciones de comandos
+src/discord/commands.ts    Ejecucion de cada comando
+src/discord/constants.ts   Valores fijos de Discord
+src/discord/env.ts         Schema Zod de entorno de Discord
+src/discord/messages.ts    Textos de respuesta
+src/discord/verify.ts      Verificacion de firma Ed25519
 src/drive/client.ts        Cliente autenticado de Drive
 src/drive/download.ts      Descarga de imagenes a memoria
 src/drive/listPending.ts   Consulta y filtros
@@ -65,6 +75,7 @@ src/meta/client.ts         Cliente Graph API
 src/meta/facebook.ts       Publicacion en pagina
 src/meta/instagram.ts      Publicacion en Instagram
 src/types.ts               Contratos compartidos
+scripts/registerDiscordCommands.ts  Registro de comandos en el servidor
 vercel.json                Cron y limites
 ```
 
@@ -73,6 +84,7 @@ vercel.json                Cron y limites
 | API | Uso |
 |---|---|
 | Google Drive API v3 | `files.list`, `files.get` (metadatos y binario), `files.update` |
+| Discord API v10 | `PUT /applications/{app}/guilds/{guild}/commands`, `PATCH /webhooks/{app}/{token}/messages/@original` |
 | Meta Graph API v21.0 | `/{page}/photos`, `/{ig-user}/media`, `/{ig-user}/media_publish` |
 
 ## Decisiones tecnicas
@@ -101,3 +113,8 @@ vercel.json                Cron y limites
   `MAX_IMAGE_MEGABYTES` protege la memoria de la funcion.
 - **`mvFacebookPostId` guardado antes de Instagram:** si Instagram falla, el
   reintento no duplica el post de Facebook.
+- **Discord por HTTP interactions, no por gateway:** un bot con gateway necesita un
+  proceso siempre encendido, que Vercel no tiene. Con el Interactions Endpoint cada
+  comando es una peticion firmada; se responde diferido antes de los 3 s y el trabajo
+  sigue con `waitUntil`. El token del bot solo se usa para registrar comandos, desde
+  local, y nunca se carga en Vercel.

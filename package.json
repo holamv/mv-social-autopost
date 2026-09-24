@@ -11,9 +11,11 @@
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "deploy:staging": "vercel deploy",
-    "deploy:production": "vercel deploy --prod"
+    "deploy:production": "vercel deploy --prod",
+    "discord:register": "node scripts/registerDiscordCommands.ts"
   },
   "dependencies": {
+    "@vercel/functions": "^3.9.9",
     "googleapis": "^144.0.0",
     "zod": "^3.23.8"
   },

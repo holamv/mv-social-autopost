@@ -15,6 +15,10 @@
     "api/media.ts": {
       "maxDuration": 30,
       "memory": 1024
+    },
+    "api/discord/interactions.ts": {
+      "maxDuration": 120,
+      "memory": 1024
     }
   }
 }

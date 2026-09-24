@@ -1,0 +1,49 @@
+import type { ApiResponse, PendingImage, PublishRunSummary } from '../types.js'
+import { LINE_BREAK, MESSAGE_CONTENT_MAX_LENGTH, QUEUE_PREVIEW_SIZE, TRUNCATION_SUFFIX } from './constants.js'
+
+export const UNKNOWN_COMMAND_MESSAGE = 'No conozco ese comando.'
+export const STATUS_ERROR_MESSAGE = 'No pude leer la carpeta de Drive. Revisa los logs en Vercel.'
+export const PUBLISH_ERROR_MESSAGE = 'La publicacion fallo antes de empezar. Revisa los logs en Vercel.'
+
+function fitToDiscord(content: string): string {
+  if (content.length <= MESSAGE_CONTENT_MAX_LENGTH) {
+    return content
+  }
+
+  return content.slice(0, MESSAGE_CONTENT_MAX_LENGTH - TRUNCATION_SUFFIX.length) + TRUNCATION_SUFFIX
+}
+
+export function formatQueueStatus(pending: PendingImage[]): string {
+  if (pending.length === 0) {
+    return 'La cola esta vacia: no hay imagenes pendientes en la carpeta de Drive.'
+  }
+
+  const nextImages = pending.slice(0, QUEUE_PREVIEW_SIZE).map((image, index) => `${index + 1}. ${image.name}`)
+
+  return fitToDiscord(
+    [`**${pending.length}** imagen(es) pendiente(s). Las proximas:`, ...nextImages].join(LINE_BREAK),
+  )
+}
+
+export function formatPublishResult(result: ApiResponse<PublishRunSummary>): string {
+  if (!result.success) {
+    return PUBLISH_ERROR_MESSAGE
+  }
+
+  const { published, failed, skipped, pendingCount } = result.data
+
+  if (pendingCount === 0) {
+    return 'No habia nada que publicar: la cola esta vacia.'
+  }
+
+  const lines = [
+    ...published.map((image) => `✅ Publicada: ${image.name}`),
+    ...failed.map((image) => `❌ Fallo: ${image.name}: ${image.error}`),
+  ]
+
+  if (skipped > 0) {
+    lines.push(`⏳ ${skipped} imagen(es) quedaron para la proxima corrida por falta de tiempo.`)
+  }
+
+  return fitToDiscord(lines.join(LINE_BREAK))
+}
