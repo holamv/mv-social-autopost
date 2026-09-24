@@ -9,7 +9,7 @@ import {
   DRIVE_PAGE_TOKEN_FIELD,
   DRIVE_PAGE_SIZE,
   CHANNEL_POST_ID_KEYS,
-  IMAGE_MIME_PREFIX,
+  LINKEDIN_MEDIA_URN_KEY,
   LOCKED_AT_KEY,
   LOCK_TTL_MINUTES,
   MS_PER_SECOND,
@@ -26,11 +26,15 @@ function buildFieldsSelector(): string {
   return [DRIVE_PAGE_TOKEN_FIELD, `${DRIVE_FILE_COLLECTION}(${properties})`].join(FIELD_SEPARATOR)
 }
 
-function buildPendingQuery(folderId: string): string {
+function buildMimeFilter(mimePrefixes: string[]): string {
+  return `(${mimePrefixes.map((prefix) => `mimeType contains '${prefix}'`).join(' or ')})`
+}
+
+function buildPendingQuery(folderId: string, mimePrefixes: string[]): string {
   return [
     `'${folderId}' in parents`,
     'trashed = false',
-    `mimeType contains '${IMAGE_MIME_PREFIX}'`,
+    buildMimeFilter(mimePrefixes),
     `not appProperties has { key='${STATUS_KEY}' and value='${STATUS_PUBLISHED}' }`,
   ].join(' and ')
 }
@@ -58,7 +62,10 @@ function toPendingImage(file: drive_v3.Schema$File, defaultCaption: string): Pen
     order: parseFileOrder(file.name ?? ''),
     caption: file.description?.trim() || defaultCaption,
     lockedAt: properties[LOCKED_AT_KEY] ?? null,
+    mimeType: file.mimeType ?? '',
+    sizeBytes: Number(file.size ?? 0),
     postIds: readPostIds(properties),
+    linkedInMediaUrn: properties[LINKEDIN_MEDIA_URN_KEY] ?? null,
   }
 }
 
@@ -72,7 +79,7 @@ export function isLocked(image: PendingImage, now: number): boolean {
   return lockAge < LOCK_TTL_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND
 }
 
-export async function listPendingImages(folderId: string): Promise<PendingImage[]> {
+export async function listPendingImages(folderId: string, mimePrefixes: string[]): Promise<PendingImage[]> {
   const env = getEnv()
   const drive = getDriveClient()
   const collected: PendingImage[] = []
@@ -80,7 +87,7 @@ export async function listPendingImages(folderId: string): Promise<PendingImage[
 
   for (let page = 0; page < DRIVE_MAX_PAGES; page += 1) {
     const response = await drive.files.list({
-      q: buildPendingQuery(folderId),
+      q: buildPendingQuery(folderId, mimePrefixes),
       fields: buildFieldsSelector(),
       pageSize: DRIVE_PAGE_SIZE,
       pageToken,

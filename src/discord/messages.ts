@@ -21,14 +21,15 @@ function fitToDiscord(content: string): string {
   return content.slice(0, MESSAGE_CONTENT_MAX_LENGTH - TRUNCATION_SUFFIX.length) + TRUNCATION_SUFFIX
 }
 
-const CHANNEL_LABELS: Record<Channel, string> = { facebook: 'Facebook', instagram: 'Instagram' }
+const CHANNEL_LABELS: Record<Channel, string> = { facebook: 'Facebook', instagram: 'Instagram', linkedin: 'LinkedIn' }
 
 function describeChannels(channels: Channel[]): string {
   return channels.map((channel) => CHANNEL_LABELS[channel]).join(' + ')
 }
 
 function formatQueue(queue: RouteQueue): string[] {
-  const header = `**${queue.route.label}** → ${describeChannels(queue.route.channels)}: ${queue.pending.length} pendiente(s)`
+  const disabled = queue.route.disabledReason ? ` ⚠️ no se publica (${queue.route.disabledReason})` : ''
+  const header = `**${queue.route.label}** → ${describeChannels(queue.route.channels)}: ${queue.pending.length} pendiente(s)${disabled}`
   const nextImages = queue.pending.slice(0, QUEUE_PREVIEW_SIZE).map((image, index) => `  ${index + 1}. ${image.name}`)
 
   return [header, ...nextImages]

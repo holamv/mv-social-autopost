@@ -35,7 +35,7 @@ Fuera del alcance por ahora:
 | Listado de pendientes con orden numerico | done |
 | Subcarpetas por red (`Facebook/`, `Instagram/`) con `Publicados/<red>` | done |
 | Videos en Facebook e Instagram (Reels) | pendiente (fase 2) |
-| LinkedIn (imagenes y videos) | pendiente (fase 3) |
+| LinkedIn (imagenes y videos) | done (falta aprobacion de LinkedIn y token) |
 | YouTube Shorts | pendiente (fase 4) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
@@ -78,6 +78,10 @@ src/discord/verify.ts      Verificacion de firma Ed25519
 src/drive/client.ts        Cliente autenticado de Drive
 src/drive/download.ts      Descarga de imagenes a memoria
 src/drive/folders.ts       Busqueda de subcarpetas por nombre
+src/linkedin/client.ts     Token, encabezados versionados y renovacion
+src/linkedin/media.ts      Subida de imagenes y videos por partes
+src/linkedin/posts.ts      Creacion del post y escape de texto
+src/linkedin/publish.ts    Flujo completo con reanudacion de videos
 src/drive/listPending.ts   Consulta y filtros
 src/drive/marking.ts       Lock y marcado de estado
 src/drive/move.ts          Movimiento entre carpetas
@@ -97,6 +101,7 @@ vercel.json                Cron y limites
 |---|---|
 | Google Drive API v3 | `files.list`, `files.get` (metadatos y binario), `files.update` |
 | Discord API v10 | `PUT /applications/{app}/guilds/{guild}/commands`, `PATCH /webhooks/{app}/{token}/messages/@original` |
+| LinkedIn REST API (202609) | `/rest/images`, `/rest/videos` (initialize, finalize, estado), `/rest/posts` |
 | Meta Graph API v21.0 | `/{page}/photos`, `/{ig-user}/media`, `/{ig-user}/media_publish` |
 
 ## Decisiones tecnicas
@@ -134,3 +139,7 @@ vercel.json                Cron y limites
   su propio ID de publicacion en `appProperties`, asi un reintento solo publica en
   la red que falto. Las subcarpetas de `Publicados` no se crean solas porque una
   cuenta de servicio no puede ser duena de archivos en un Drive personal.
+- **LinkedIn, videos por partes desde Drive:** cada parte de 4 MB se baja de Drive
+  con `Range` y se sube directo, asi un video grande no ocupa la memoria de la
+  funcion. El URN del video se guarda apenas termina la subida para no repetirla si
+  LinkedIn todavia lo esta procesando.

@@ -8,6 +8,10 @@ const DRIVE_ID_MESSAGE = 'must be only the folder ID, without URL parts like ?hl
 const PRIVATE_KEY_MESSAGE = 'is not a readable PEM private key'
 
 const driveFolderId = z.string().trim().regex(DRIVE_ID_PATTERN, DRIVE_ID_MESSAGE)
+const LINKEDIN_ORGANIZATION_PATTERN = /^\d+$/
+const LINKEDIN_VERSION_PATTERN = /^\d{6}$/
+const DEFAULT_LINKEDIN_API_VERSION = '202609'
+const optionalSecret = z.string().trim().min(1).optional()
 
 export class EnvConfigError extends Error {
   constructor(readonly variables: string[]) {
@@ -31,6 +35,12 @@ const envSchema = z
     CRON_SECRET: z.string().min(1),
     BATCH_SIZE: z.coerce.number().int().positive().default(DEFAULT_BATCH_SIZE),
     DEFAULT_CAPTION: z.string().default(''),
+    LINKEDIN_ORGANIZATION_ID: z.string().trim().regex(LINKEDIN_ORGANIZATION_PATTERN).optional(),
+    LINKEDIN_ACCESS_TOKEN: optionalSecret,
+    LINKEDIN_CLIENT_ID: optionalSecret,
+    LINKEDIN_CLIENT_SECRET: optionalSecret,
+    LINKEDIN_REFRESH_TOKEN: optionalSecret,
+    LINKEDIN_API_VERSION: z.string().trim().regex(LINKEDIN_VERSION_PATTERN).default(DEFAULT_LINKEDIN_API_VERSION),
   })
   .superRefine((value, context) => {
     if (value.MARK_STRATEGY === MARK_STRATEGIES[1] && !value.DRIVE_PUBLISHED_FOLDER_ID) {
