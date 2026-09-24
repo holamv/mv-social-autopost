@@ -1,14 +1,27 @@
 import { z } from 'zod'
-import { DEFAULT_BATCH_SIZE, ESCAPED_PRIVATE_KEY_NEWLINE, REAL_NEWLINE } from './constants.js'
+import { DEFAULT_BATCH_SIZE } from './constants.js'
+import { isReadablePrivateKey, normalizePrivateKey } from './privateKey.js'
 
 const MARK_STRATEGIES = ['properties', 'move'] as const
+const DRIVE_ID_PATTERN = /^[A-Za-z0-9_-]+$/
+const DRIVE_ID_MESSAGE = 'must be only the folder ID, without URL parts like ?hl='
+const PRIVATE_KEY_MESSAGE = 'is not a readable PEM private key'
+
+const driveFolderId = z.string().trim().regex(DRIVE_ID_PATTERN, DRIVE_ID_MESSAGE)
+
+export class EnvConfigError extends Error {
+  constructor(readonly variables: string[]) {
+    super(`Invalid environment configuration: ${variables.join(', ')}`)
+    this.name = 'EnvConfigError'
+  }
+}
 
 const envSchema = z
   .object({
     GOOGLE_CLIENT_EMAIL: z.string().email(),
-    GOOGLE_PRIVATE_KEY: z.string().min(1),
-    DRIVE_SOURCE_FOLDER_ID: z.string().min(1),
-    DRIVE_PUBLISHED_FOLDER_ID: z.string().optional(),
+    GOOGLE_PRIVATE_KEY: z.string().min(1).transform(normalizePrivateKey).refine(isReadablePrivateKey, PRIVATE_KEY_MESSAGE),
+    DRIVE_SOURCE_FOLDER_ID: driveFolderId,
+    DRIVE_PUBLISHED_FOLDER_ID: driveFolderId.or(z.literal('')).optional(),
     MARK_STRATEGY: z.enum(MARK_STRATEGIES).default(MARK_STRATEGIES[0]),
     META_GRAPH_ACCESS_TOKEN: z.string().min(1),
     META_PAGE_ID: z.string().min(1),
@@ -41,14 +54,10 @@ export function getEnv(): Env {
   const parsed = envSchema.safeParse(process.env)
 
   if (!parsed.success) {
-    const missing = parsed.error.issues.map((issue) => issue.path.join('.')).join(', ')
-    throw new Error(`Invalid environment configuration: ${missing}`)
+    throw new EnvConfigError(parsed.error.issues.map((issue) => issue.path.join('.')))
   }
 
-  cachedEnv = {
-    ...parsed.data,
-    GOOGLE_PRIVATE_KEY: parsed.data.GOOGLE_PRIVATE_KEY.replace(ESCAPED_PRIVATE_KEY_NEWLINE, REAL_NEWLINE),
-  }
+  cachedEnv = parsed.data
 
   return cachedEnv
 }

@@ -42,6 +42,8 @@ Fuera del alcance por ahora:
 | Vercel Cron Job configurado (cada hora) | done |
 | Corte por tiempo antes del limite de Vercel | done |
 | Validacion de variables de entorno con Zod | done |
+| Tolerancia de formato en `GOOGLE_PRIVATE_KEY` y validacion de IDs de carpeta | done |
+| Bot informa en Discord que variable esta mal configurada | done |
 | Bot de Discord: `/estado` y `/publicar-ahora` por HTTP interactions | done (falta crear la app y agregarla al servidor) |
 | Tests unitarios (ordering, signedUrl, pipeline, discord) | pendiente |
 | Alertas a Discord cuando una publicacion falla | pendiente |
@@ -55,6 +57,7 @@ api/media.ts               Handler de la imagen firmada
 api/discord/interactions.ts  Endpoint de comandos de Discord
 src/config/constants.ts    Valores fijos
 src/config/env.ts          Schema Zod de entorno
+src/config/privateKey.ts   Normalizacion y validacion de la clave de Google
 src/core/deadline.ts       Presupuesto de tiempo
 src/core/pipeline.ts       Orquestacion del ciclo
 src/discord/api.ts         Edicion de la respuesta diferida
