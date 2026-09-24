@@ -1,12 +1,19 @@
 import { getEnv } from '../config/env.js'
 import type { Deadline } from './deadline.js'
-import { downloadImageToMemory } from '../drive/download.js'
+import { CHANNEL_PUBLISHERS } from './publishers.js'
+import { resolveRoutes } from './routes.js'
 import { listPendingImages } from '../drive/listPending.js'
-import { claimImage, markAsPublished, releaseImage, storeFacebookPostId } from '../drive/marking.js'
-import { buildSignedMediaUrl } from '../lib/signedUrl.js'
-import { publishToFacebook } from '../meta/facebook.js'
-import { publishToInstagram } from '../meta/instagram.js'
-import type { ApiResponse, FailedImage, PendingImage, PublishRunSummary, PublishedImage } from '../types.js'
+import { claimImage, markAsPublished, releaseImage, storeChannelPostId } from '../drive/marking.js'
+import type {
+  ApiResponse,
+  ChannelPostIds,
+  FailedImage,
+  PendingImage,
+  PublishRoute,
+  PublishRunSummary,
+  PublishedImage,
+  RouteQueue,
+} from '../types.js'
 
 const RUN_ERROR_MESSAGE = 'No se pudo completar la publicacion programada'
 
@@ -16,54 +23,62 @@ interface BatchOutcome {
   skipped: number
 }
 
-async function publishImage(image: PendingImage, deadline: Deadline): Promise<PublishedImage> {
+async function publishImage(image: PendingImage, route: PublishRoute, deadline: Deadline): Promise<PublishedImage> {
   await claimImage(image.id)
 
-  let facebookPostId = image.facebookPostId
+  const postIds: ChannelPostIds = { ...image.postIds }
 
-  if (!facebookPostId) {
-    const binary = await downloadImageToMemory(image.id)
+  for (const channel of route.channels) {
+    if (postIds[channel]) {
+      continue
+    }
 
-    facebookPostId = await publishToFacebook(binary, image.caption)
-    await storeFacebookPostId(image.id, facebookPostId)
+    const postId = await CHANNEL_PUBLISHERS[channel](image, deadline)
+
+    postIds[channel] = postId
+    await storeChannelPostId(image.id, channel, postId)
   }
 
-  const instagramMediaId = await publishToInstagram(buildSignedMediaUrl(image.id), image.caption, deadline)
+  await markAsPublished(image.id, route)
 
-  await markAsPublished(image.id, facebookPostId, instagramMediaId)
-
-  return { fileId: image.id, name: image.name, facebookPostId, instagramMediaId }
+  return { fileId: image.id, name: image.name, route: route.label, postIds }
 }
 
-async function publishBatch(batch: PendingImage[], deadline: Deadline): Promise<BatchOutcome> {
-  const published: PublishedImage[] = []
-  const failed: FailedImage[] = []
-  let skipped = 0
-
-  for (const image of batch) {
+async function publishQueue(queue: RouteQueue, deadline: Deadline, outcome: BatchOutcome): Promise<void> {
+  for (const image of queue.pending.slice(0, getEnv().BATCH_SIZE)) {
     if (deadline.isExpired()) {
-      skipped += 1
+      outcome.skipped += 1
       continue
     }
 
     try {
-      published.push(await publishImage(image, deadline))
+      outcome.published.push(await publishImage(image, queue.route, deadline))
     } catch (error) {
-      console.error(`[Pipeline] Error publicando ${image.name}:`, error)
-      failed.push({ fileId: image.id, name: image.name, error: String(error) })
+      console.error(`[Pipeline] Error publicando ${queue.route.label}/${image.name}:`, error)
+      outcome.failed.push({ fileId: image.id, name: image.name, route: queue.route.label, error: String(error) })
       await releaseImage(image.id)
     }
   }
+}
 
-  return { published, failed, skipped }
+export async function listQueues(): Promise<RouteQueue[]> {
+  const routes = await resolveRoutes()
+
+  return Promise.all(routes.map(async (route) => ({ route, pending: await listPendingImages(route.sourceFolderId) })))
 }
 
 export async function runPublishCycle(deadline: Deadline): Promise<ApiResponse<PublishRunSummary>> {
   try {
-    const pending = await listPendingImages()
-    const outcome = await publishBatch(pending.slice(0, getEnv().BATCH_SIZE), deadline)
+    const queues = await listQueues()
+    const outcome: BatchOutcome = { published: [], failed: [], skipped: 0 }
 
-    return { success: true, data: { pendingCount: pending.length, ...outcome } }
+    for (const queue of queues) {
+      await publishQueue(queue, deadline, outcome)
+    }
+
+    const pendingCount = queues.reduce((total, queue) => total + queue.pending.length, 0)
+
+    return { success: true, data: { pendingCount, ...outcome } }
   } catch (error) {
     console.error('[Pipeline] Error en el ciclo de publicacion:', error)
 

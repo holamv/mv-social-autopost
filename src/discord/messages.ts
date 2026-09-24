@@ -1,4 +1,4 @@
-import type { ApiResponse, PendingImage, PublishRunSummary } from '../types.js'
+import type { ApiResponse, Channel, PublishRunSummary, RouteQueue } from '../types.js'
 import { LINE_BREAK, MESSAGE_CONTENT_MAX_LENGTH, QUEUE_PREVIEW_SIZE, TRUNCATION_SUFFIX } from './constants.js'
 
 export const UNKNOWN_COMMAND_MESSAGE = 'No conozco ese comando.'
@@ -21,16 +21,25 @@ function fitToDiscord(content: string): string {
   return content.slice(0, MESSAGE_CONTENT_MAX_LENGTH - TRUNCATION_SUFFIX.length) + TRUNCATION_SUFFIX
 }
 
-export function formatQueueStatus(pending: PendingImage[]): string {
-  if (pending.length === 0) {
-    return 'La cola esta vacia: no hay imagenes pendientes en la carpeta de Drive.'
+const CHANNEL_LABELS: Record<Channel, string> = { facebook: 'Facebook', instagram: 'Instagram' }
+
+function describeChannels(channels: Channel[]): string {
+  return channels.map((channel) => CHANNEL_LABELS[channel]).join(' + ')
+}
+
+function formatQueue(queue: RouteQueue): string[] {
+  const header = `**${queue.route.label}** → ${describeChannels(queue.route.channels)}: ${queue.pending.length} pendiente(s)`
+  const nextImages = queue.pending.slice(0, QUEUE_PREVIEW_SIZE).map((image, index) => `  ${index + 1}. ${image.name}`)
+
+  return [header, ...nextImages]
+}
+
+export function formatQueueStatus(queues: RouteQueue[]): string {
+  if (queues.every((queue) => queue.pending.length === 0)) {
+    return 'Las colas estan vacias: no hay imagenes pendientes en ninguna carpeta de Drive.'
   }
 
-  const nextImages = pending.slice(0, QUEUE_PREVIEW_SIZE).map((image, index) => `${index + 1}. ${image.name}`)
-
-  return fitToDiscord(
-    [`**${pending.length}** imagen(es) pendiente(s). Las proximas:`, ...nextImages].join(LINE_BREAK),
-  )
+  return fitToDiscord(queues.flatMap(formatQueue).join(LINE_BREAK))
 }
 
 export function formatPublishResult(result: ApiResponse<PublishRunSummary>): string {
@@ -45,8 +54,8 @@ export function formatPublishResult(result: ApiResponse<PublishRunSummary>): str
   }
 
   const lines = [
-    ...published.map((image) => `✅ Publicada: ${image.name}`),
-    ...failed.map((image) => `❌ Fallo: ${image.name}: ${image.error}`),
+    ...published.map((image) => `✅ Publicada (${image.route}): ${image.name}`),
+    ...failed.map((image) => `❌ Fallo (${image.route}): ${image.name}: ${image.error}`),
   ]
 
   if (skipped > 0) {

@@ -40,6 +40,25 @@ GET /api/cron/publish          ← protegido con CRON_SECRET
               mueve el archivo a la carpeta de publicadas
 ```
 
+### Carpetas por red
+
+Dentro de la carpeta de origen se puede elegir en que red sale cada archivo:
+
+```
+Carpeta de origen
+├── foto-suelta.jpg   → Facebook + Instagram
+├── Facebook/         → solo Facebook
+└── Instagram/        → solo Instagram
+```
+
+- Los nombres de las subcarpetas son exactos: `Facebook` e `Instagram`. Si una no
+  existe, esa cola simplemente no se procesa.
+- Cada corrida publica hasta `BATCH_SIZE` archivos **por cola**, en orden numerico.
+- Con `MARK_STRATEGY='move'`, lo publicado se mueve a `Publicados/` (sueltas) o a
+  `Publicados/Facebook/` y `Publicados/Instagram/`. Esas subcarpetas se crean a mano
+  en Drive: si faltan, el archivo queda marcado como publicado pero no se mueve.
+- `/estado` en Discord muestra cada cola por separado.
+
 ### Por que cada red se publica distinto
 
 **Facebook acepta el archivo directo.** La imagen se descarga de Drive a memoria y

@@ -1,6 +1,6 @@
 # PROJECT_SCOPE - mv-social-autopost
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Estado:** base funcional, sin desplegar
 **Ultima actualizacion:** 2026-09-24
 
@@ -33,6 +33,10 @@ Fuera del alcance por ahora:
 | Autenticacion con Google Drive (cuenta de servicio) | done |
 | Descarga de imagen a memoria con validacion y tope de peso | done |
 | Listado de pendientes con orden numerico | done |
+| Subcarpetas por red (`Facebook/`, `Instagram/`) con `Publicados/<red>` | done |
+| Videos en Facebook e Instagram (Reels) | pendiente (fase 2) |
+| LinkedIn (imagenes y videos) | pendiente (fase 3) |
+| YouTube Shorts | pendiente (fase 4) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
 | Publicacion en Facebook por subida binaria directa | done |
@@ -60,7 +64,9 @@ src/config/constants.ts    Valores fijos
 src/config/env.ts          Schema Zod de entorno
 src/config/privateKey.ts   Normalizacion y validacion de la clave de Google
 src/core/deadline.ts       Presupuesto de tiempo
-src/core/pipeline.ts       Orquestacion del ciclo
+src/core/pipeline.ts       Orquestacion del ciclo por cola
+src/core/publishers.ts     Publicador de cada red
+src/core/routes.ts         Carpeta principal y subcarpetas por red
 src/discord/access.ts      Quien puede usar /publicar-ahora
 src/discord/api.ts         Edicion de la respuesta diferida
 src/discord/commandDefinitions.ts  Nombres y definiciones de comandos
@@ -71,6 +77,7 @@ src/discord/messages.ts    Textos de respuesta
 src/discord/verify.ts      Verificacion de firma Ed25519
 src/drive/client.ts        Cliente autenticado de Drive
 src/drive/download.ts      Descarga de imagenes a memoria
+src/drive/folders.ts       Busqueda de subcarpetas por nombre
 src/drive/listPending.ts   Consulta y filtros
 src/drive/marking.ts       Lock y marcado de estado
 src/drive/move.ts          Movimiento entre carpetas
@@ -123,3 +130,7 @@ vercel.json                Cron y limites
   comando es una peticion firmada; se responde diferido antes de los 3 s y el trabajo
   sigue con `waitUntil`. El token del bot solo se usa para registrar comandos, desde
   local, y nunca se carga en Vercel.
+- **Rutas por subcarpeta:** cada carpeta es una cola con sus redes. Cada red guarda
+  su propio ID de publicacion en `appProperties`, asi un reintento solo publica en
+  la red que falto. Las subcarpetas de `Publicados` no se crean solas porque una
+  cuenta de servicio no puede ser duena de archivos en un Drive personal.

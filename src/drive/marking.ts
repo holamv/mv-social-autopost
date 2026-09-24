@@ -1,17 +1,14 @@
 import type { drive_v3 } from 'googleapis'
-import { getEnv } from '../config/env.js'
 import { getDriveClient } from './client.js'
 import { moveFile } from './move.js'
 import {
-  FACEBOOK_POST_ID_KEY,
-  INSTAGRAM_MEDIA_ID_KEY,
+  CHANNEL_POST_ID_KEYS,
   LOCKED_AT_KEY,
   PUBLISHED_AT_KEY,
   STATUS_KEY,
   STATUS_PUBLISHED,
 } from '../config/constants.js'
-
-const MOVE_STRATEGY = 'move'
+import type { Channel, PublishRoute } from '../types.js'
 
 type AppPropertyPatch = Record<string, string | null>
 
@@ -30,34 +27,18 @@ export async function releaseImage(fileId: string): Promise<void> {
   await patchAppProperties(fileId, { [LOCKED_AT_KEY]: null })
 }
 
-export async function storeFacebookPostId(fileId: string, facebookPostId: string): Promise<void> {
-  await patchAppProperties(fileId, { [FACEBOOK_POST_ID_KEY]: facebookPostId })
+export async function storeChannelPostId(fileId: string, channel: Channel, postId: string): Promise<void> {
+  await patchAppProperties(fileId, { [CHANNEL_POST_ID_KEYS[channel]]: postId })
 }
 
-async function moveToPublishedFolder(fileId: string): Promise<void> {
-  const env = getEnv()
-
-  if (!env.DRIVE_PUBLISHED_FOLDER_ID) {
-    return
-  }
-
-  await moveFile(fileId, env.DRIVE_SOURCE_FOLDER_ID, env.DRIVE_PUBLISHED_FOLDER_ID)
-}
-
-export async function markAsPublished(
-  fileId: string,
-  facebookPostId: string,
-  instagramMediaId: string,
-): Promise<void> {
+export async function markAsPublished(fileId: string, route: PublishRoute): Promise<void> {
   await patchAppProperties(fileId, {
     [STATUS_KEY]: STATUS_PUBLISHED,
     [PUBLISHED_AT_KEY]: new Date().toISOString(),
-    [FACEBOOK_POST_ID_KEY]: facebookPostId,
-    [INSTAGRAM_MEDIA_ID_KEY]: instagramMediaId,
     [LOCKED_AT_KEY]: null,
   })
 
-  if (getEnv().MARK_STRATEGY === MOVE_STRATEGY) {
-    await moveToPublishedFolder(fileId)
+  if (route.publishedFolderId) {
+    await moveFile(fileId, route.sourceFolderId, route.publishedFolderId)
   }
 }
