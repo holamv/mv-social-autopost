@@ -16,8 +16,13 @@ async function publishImageToInstagram(image: PendingImage, deadline: Deadline):
   return publishToInstagram(buildSignedMediaUrl(image.id), image.caption, deadline)
 }
 
+async function rejectUnapprovedTikTok(): Promise<string> {
+  throw new Error('TikTok solo publica con aprobacion desde Discord')
+}
+
 export const CHANNEL_PUBLISHERS: Record<Channel, ChannelPublisher> = {
   facebook: publishImageToFacebook,
   instagram: publishImageToInstagram,
   linkedin: publishToLinkedIn,
+  tiktok: rejectUnapprovedTikTok,
 }

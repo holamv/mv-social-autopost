@@ -10,7 +10,9 @@ export interface ApiResponse<T> {
   }
 }
 
-export type Channel = 'facebook' | 'instagram' | 'linkedin'
+export type Channel = 'facebook' | 'instagram' | 'linkedin' | 'tiktok'
+
+export type RouteMode = 'publish' | 'approval'
 
 export type ChannelPostIds = Partial<Record<Channel, string>>
 
@@ -24,6 +26,8 @@ export interface PendingImage {
   lockedAt: string | null
   postIds: ChannelPostIds
   linkedInMediaUrn: string | null
+  webViewLink: string
+  tikTokMessageId: string | null
 }
 
 export interface PublishRoute {
@@ -31,6 +35,7 @@ export interface PublishRoute {
   sourceFolderId: string
   channels: Channel[]
   mimePrefixes: string[]
+  mode: RouteMode
   publishedFolderId: string | null
   disabledReason: string | null
 }
@@ -57,8 +62,15 @@ export interface FailedImage {
 export interface PublishRunSummary {
   pendingCount: number
   published: PublishedImage[]
+  proposed: ProposedFile[]
   failed: FailedImage[]
   skipped: number
+}
+
+export interface ProposedFile {
+  fileId: string
+  name: string
+  route: string
 }
 
 export interface DriveImage {

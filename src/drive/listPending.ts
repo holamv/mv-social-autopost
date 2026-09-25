@@ -10,6 +10,7 @@ import {
   DRIVE_PAGE_SIZE,
   CHANNEL_POST_ID_KEYS,
   LINKEDIN_MEDIA_URN_KEY,
+  TIKTOK_MESSAGE_ID_KEY,
   LOCKED_AT_KEY,
   LOCK_TTL_MINUTES,
   MS_PER_SECOND,
@@ -66,6 +67,8 @@ function toPendingImage(file: drive_v3.Schema$File, defaultCaption: string): Pen
     sizeBytes: Number(file.size ?? 0),
     postIds: readPostIds(properties),
     linkedInMediaUrn: properties[LINKEDIN_MEDIA_URN_KEY] ?? null,
+    webViewLink: file.webViewLink ?? '',
+    tikTokMessageId: properties[TIKTOK_MESSAGE_ID_KEY] ?? null,
   }
 }
 
@@ -109,4 +112,18 @@ export async function listPendingImages(folderId: string, mimePrefixes: string[]
   const now = Date.now()
 
   return sortByOrder(collected.filter((image) => image.id && !isLocked(image, now)))
+}
+
+export async function getPendingFile(fileId: string): Promise<PendingImage | null> {
+  const response = await getDriveClient().files.get({
+    fileId,
+    fields: DRIVE_FILE_PROPERTIES.join(FIELD_SEPARATOR),
+    supportsAllDrives: true,
+  })
+
+  if (response.data.appProperties?.[STATUS_KEY] === STATUS_PUBLISHED) {
+    return null
+  }
+
+  return toPendingImage(response.data, getEnv().DEFAULT_CAPTION)
 }

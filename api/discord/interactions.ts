@@ -1,8 +1,10 @@
 import { getDiscordEnv } from '../../src/discord/env.js'
 import { handleCommand, type CommandInteraction } from '../../src/discord/commands.js'
 import { isValidDiscordSignature } from '../../src/discord/verify.js'
+import { handleComponent, type ComponentInteraction } from '../../src/discord/tiktokComponents.js'
 import {
   INTERACTION_TYPE_APPLICATION_COMMAND,
+  INTERACTION_TYPE_MESSAGE_COMPONENT,
   INTERACTION_TYPE_PING,
   RESPONSE_TYPE_PONG,
   SIGNATURE_HEADER,
@@ -54,6 +56,10 @@ export async function POST(request: Request): Promise<Response> {
 
   if (interaction.type === INTERACTION_TYPE_APPLICATION_COMMAND) {
     return Response.json(handleCommand(interaction))
+  }
+
+  if (interaction.type === INTERACTION_TYPE_MESSAGE_COMPONENT) {
+    return Response.json(handleComponent(interaction as unknown as ComponentInteraction))
   }
 
   return new Response(UNSUPPORTED_MESSAGE, { status: HTTP_BAD_REQUEST })

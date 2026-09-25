@@ -75,6 +75,19 @@ publica. Ver README, seccion 2b.
 | `LINKEDIN_REFRESH_TOKEN` | no | Solo si LinkedIn aprobo refresh tokens para la app (1 año) |
 | `LINKEDIN_API_VERSION` | no, default `202609` | Version `YYYYMM` de la API. LinkedIn retira cada version al año |
 
+## TikTok
+
+Opcionales. Si falta cualquiera, la carpeta `TikTok/` no se procesa y `/estado` dice cual.
+
+| Variable | De donde sale |
+|---|---|
+| `TIKTOK_CLIENT_KEY` | developers.tiktok.com → la app → Client key |
+| `TIKTOK_CLIENT_SECRET` | Misma pantalla, Client secret. Secreto |
+| `KV_REST_API_URL` | Vercel → Storage → Upstash Redis (se carga sola al conectar la base) |
+| `KV_REST_API_TOKEN` | Idem. Guarda el token de TikTok, que cambia en cada renovacion |
+| `DISCORD_BOT_TOKEN` | Ver seccion del bot. Hace falta para mandar los mensajes de aprobacion |
+| `DISCORD_TIKTOK_CHANNEL_ID` | ID del canal de Discord donde se aprueba cada video |
+
 ## Bot de Discord
 
 Opcionales: si faltan, el cron sigue funcionando y solo `/api/discord/interactions`
@@ -85,7 +98,8 @@ responde 500. Ver [DISCORD_BOT.md](DISCORD_BOT.md).
 | `DISCORD_APPLICATION_ID` | Vercel | Portal de Discord → General Information |
 | `DISCORD_PUBLIC_KEY` | Vercel | Portal de Discord → General Information |
 | `DISCORD_PUBLISHER_IDS` | Vercel, opcional | IDs de usuario o rol de Discord que pueden usar `/publicar-ahora`, separados por coma. Los administradores siempre pueden |
-| `DISCORD_BOT_TOKEN` | Solo tu maquina, para `npm run discord:register` | Portal de Discord → Bot → Reset Token |
+| `DISCORD_BOT_TOKEN` | Tu maquina para `npm run discord:register`; Vercel si se usa TikTok | Portal de Discord → Bot → Reset Token |
+| `DISCORD_TIKTOK_CHANNEL_ID` | Vercel, para TikTok | Clic derecho sobre el canal de aprobacion → Copiar ID del canal |
 | `DISCORD_GUILD_ID` | Solo tu maquina | ID del servidor de MV: `619991595613290496` |
 
 ## Checklist antes del primer deploy

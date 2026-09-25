@@ -6,6 +6,17 @@ Permite manejar la publicacion desde el Discord de Manzana Verde sin esperar al 
 |---|---|---|
 | `/estado` | Cualquier miembro | Muestra cuantas imagenes quedan y las 5 proximas. Solo lo ve quien lo pide |
 | `/publicar-ahora` | Administradores y los IDs de usuario o rol en `DISCORD_PUBLISHER_IDS` | Corre un ciclo de publicacion igual al del cron y deja el resultado en el canal |
+| `/conectar-tiktok` | Los mismos que `/publicar-ahora` | Da un enlace firmado (vence en 10 min) para autorizar la cuenta de TikTok de MV |
+
+## Aprobacion de TikTok
+
+TikTok no permite publicar sin que una persona confirme cada video. Por cada MP4 nuevo
+en `TikTok/`, el cron manda al canal `DISCORD_TIKTOK_CHANNEL_ID` un mensaje con la
+cuenta, el texto, un enlace al video, un menu de privacidad (las opciones que TikTok
+permite para esa cuenta, sin valor por defecto) y el boton **Publicar en TikTok**. Solo
+publican los administradores y `DISCORD_PUBLISHER_IDS`. Al terminar, el mensaje se
+edita con el resultado y se quitan los botones. Si falla, los botones quedan para
+reintentar.
 
 ## Como funciona
 
@@ -40,7 +51,8 @@ Los pasos 1, 4 y 5 los hace una persona con acceso: no se pueden automatizar.
    - **Application ID** → `DISCORD_APPLICATION_ID`
    - **Public Key** → `DISCORD_PUBLIC_KEY`
 3. En **Bot** → **Reset Token** y copiar el token → `DISCORD_BOT_TOKEN`.
-   Solo se usa en el paso 5, desde tu maquina. **No va en Vercel.**
+   Se usa en el paso 5 y, si se activa TikTok, tambien en Vercel: el cron lo necesita
+   para mandar los mensajes de aprobacion al canal.
 
 ### 2. Cargar las variables en Vercel
 

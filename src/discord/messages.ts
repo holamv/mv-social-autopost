@@ -13,6 +13,14 @@ export function formatConfigError(variables: string[]): string {
   return `Hay variables mal configuradas en Vercel: ${names}. Corrigelas en Settings → Environment Variables y redeploya.`
 }
 
+export function formatTikTokConnectLink(url: string): string {
+  return [
+    'Abre este enlace con la cuenta de TikTok de Manzana Verde y acepta los permisos.',
+    'El enlace vence en 10 minutos:',
+    url,
+  ].join(LINE_BREAK)
+}
+
 function fitToDiscord(content: string): string {
   if (content.length <= MESSAGE_CONTENT_MAX_LENGTH) {
     return content
@@ -21,7 +29,14 @@ function fitToDiscord(content: string): string {
   return content.slice(0, MESSAGE_CONTENT_MAX_LENGTH - TRUNCATION_SUFFIX.length) + TRUNCATION_SUFFIX
 }
 
-const CHANNEL_LABELS: Record<Channel, string> = { facebook: 'Facebook', instagram: 'Instagram', linkedin: 'LinkedIn' }
+const CHANNEL_LABELS: Record<Channel, string> = {
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  tiktok: 'TikTok',
+}
+const AWAITING_APPROVAL_SUFFIX = ' (esperando aprobacion en Discord)'
+const NOTHING_NEW_MESSAGE = 'No habia nada nuevo para publicar. Lo pendiente de TikTok espera aprobacion en Discord.'
 
 function describeChannels(channels: Channel[]): string {
   return channels.map((channel) => CHANNEL_LABELS[channel]).join(' + ')
@@ -30,7 +45,9 @@ function describeChannels(channels: Channel[]): string {
 function formatQueue(queue: RouteQueue): string[] {
   const disabled = queue.route.disabledReason ? ` ⚠️ no se publica (${queue.route.disabledReason})` : ''
   const header = `**${queue.route.label}** → ${describeChannels(queue.route.channels)}: ${queue.pending.length} pendiente(s)${disabled}`
-  const nextImages = queue.pending.slice(0, QUEUE_PREVIEW_SIZE).map((image, index) => `  ${index + 1}. ${image.name}`)
+  const nextImages = queue.pending
+    .slice(0, QUEUE_PREVIEW_SIZE)
+    .map((image, index) => `  ${index + 1}. ${image.name}${image.tikTokMessageId ? AWAITING_APPROVAL_SUFFIX : ''}`)
 
   return [header, ...nextImages]
 }
@@ -48,7 +65,7 @@ export function formatPublishResult(result: ApiResponse<PublishRunSummary>): str
     return PUBLISH_ERROR_MESSAGE
   }
 
-  const { published, failed, skipped, pendingCount } = result.data
+  const { published, proposed, failed, skipped, pendingCount } = result.data
 
   if (pendingCount === 0) {
     return 'No habia nada que publicar: la cola esta vacia.'
@@ -56,6 +73,7 @@ export function formatPublishResult(result: ApiResponse<PublishRunSummary>): str
 
   const lines = [
     ...published.map((image) => `✅ Publicada (${image.route}): ${image.name}`),
+    ...proposed.map((file) => `📨 Enviada a aprobacion (${file.route}): ${file.name}`),
     ...failed.map((image) => `❌ Fallo (${image.route}): ${image.name}: ${image.error}`),
   ]
 
@@ -63,5 +81,5 @@ export function formatPublishResult(result: ApiResponse<PublishRunSummary>): str
     lines.push(`⏳ ${skipped} imagen(es) quedaron para la proxima corrida por falta de tiempo.`)
   }
 
-  return fitToDiscord(lines.join(LINE_BREAK))
+  return lines.length > 0 ? fitToDiscord(lines.join(LINE_BREAK)) : NOTHING_NEW_MESSAGE
 }

@@ -49,10 +49,11 @@ Carpeta de origen
 ├── foto-suelta.jpg   → Facebook + Instagram
 ├── Facebook/         → solo Facebook (imagenes)
 ├── Instagram/        → solo Instagram (imagenes)
-└── LinkedIn/         → solo LinkedIn (imagenes y videos MP4)
+├── LinkedIn/         → solo LinkedIn (imagenes y videos MP4)
+└── TikTok/           → TikTok con aprobacion en Discord (videos MP4)
 ```
 
-- Los nombres de las subcarpetas son exactos: `Facebook`, `Instagram` y `LinkedIn`. Si una no
+- Los nombres de las subcarpetas son exactos: `Facebook`, `Instagram`, `LinkedIn` y `TikTok`. Si una no
   existe, esa cola simplemente no se procesa.
 - Cada corrida publica hasta `BATCH_SIZE` archivos **por cola**, en orden numerico.
 - Con `MARK_STRATEGY='move'`, lo publicado se mueve a `Publicados/` (sueltas) o a
@@ -211,6 +212,28 @@ Limites: imagenes JPG, PNG o GIF; videos MP4 de hasta `MAX_VIDEO_MEGABYTES` (200
 y de 3 s a 30 min. Un video se sube por partes de 4 MB directo desde Drive, sin
 cargarlo entero en memoria. Si LinkedIn sigue procesandolo al final de la corrida,
 el ID del video queda guardado y la corrida siguiente publica sin volver a subirlo.
+
+## 2c. Configurar TikTok (opcional)
+
+TikTok exige que una persona confirme cada publicacion, asi que el cron no publica
+solo: manda cada video a un canal de Discord para aprobarlo (ver `docs/DISCORD_BOT.md`).
+
+1. En [developers.tiktok.com](https://developers.tiktok.com) crear la app, agregar
+   **Login Kit** y **Content Posting API**, con los scopes `user.info.basic`,
+   `video.publish` y `video.upload`.
+2. Redirect URI: `https://<dominio-de-produccion>/api/tiktok/callback`.
+3. En Vercel → **Storage**, crear una base **Upstash Redis** y conectarla al proyecto:
+   agrega `KV_REST_API_URL` y `KV_REST_API_TOKEN`. Ahi se guarda el token de TikTok, que
+   dura 24 h y se renueva solo; el de renovacion cambia en cada uso, por eso no puede
+   vivir en una variable de entorno.
+4. Cargar `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `DISCORD_BOT_TOKEN` y
+   `DISCORD_TIKTOK_CHANNEL_ID`, redeployar y registrar comandos (`npm run discord:register`).
+5. En Discord, `/conectar-tiktok` → abrir el enlace con la cuenta de TikTok de MV.
+
+Mientras TikTok no audite la app, todo lo que se publica queda en **Solo yo** y hay un
+limite de 5 cuentas por dia. Para la auditoria hay que mostrar el flujo de aprobacion.
+Videos MP4 de hasta 200 MB: hasta 64 MB se suben en una parte, mas grandes en partes
+de 10 MB leidas de Drive con `Range`.
 
 ## 3. Variables de entorno
 

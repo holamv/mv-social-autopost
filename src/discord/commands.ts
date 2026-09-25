@@ -4,7 +4,9 @@ import { createDeadline } from '../core/deadline.js'
 import { listQueues, runPublishCycle } from '../core/pipeline.js'
 import { canPublish, type InteractionMember } from './access.js'
 import { editOriginalResponse } from './api.js'
-import { PUBLISH_NOW_COMMAND, STATUS_COMMAND } from './commandDefinitions.js'
+import { CONNECT_TIKTOK_COMMAND, PUBLISH_NOW_COMMAND, STATUS_COMMAND } from './commandDefinitions.js'
+import { createOAuthState } from '../tiktok/oauthState.js'
+import { buildAuthorizeUrl } from '../tiktok/tokens.js'
 import { getDiscordEnv } from './env.js'
 import {
   MESSAGE_FLAG_EPHEMERAL,
@@ -19,6 +21,7 @@ import {
   formatConfigError,
   formatPublishResult,
   formatQueueStatus,
+  formatTikTokConnectLink,
 } from './messages.js'
 
 export interface CommandInteraction {
@@ -65,6 +68,23 @@ function ephemeralReply(content: string): InteractionResponse {
   return { type: RESPONSE_TYPE_CHANNEL_MESSAGE, data: { content, flags: MESSAGE_FLAG_EPHEMERAL } }
 }
 
+function connectTikTok(interaction: CommandInteraction): InteractionResponse {
+  if (!canPublish(interaction.member, getDiscordEnv().DISCORD_PUBLISHER_IDS)) {
+    return ephemeralReply(PUBLISH_FORBIDDEN_MESSAGE)
+  }
+
+  try {
+    if (!getEnv().TIKTOK_CLIENT_KEY) {
+      return ephemeralReply(formatConfigError(['TIKTOK_CLIENT_KEY']))
+    }
+
+    return ephemeralReply(formatTikTokConnectLink(buildAuthorizeUrl(createOAuthState())))
+  } catch (error) {
+    console.error('[DiscordTikTok] Error armando el enlace:', error)
+    return ephemeralReply(describeFailure(error, PUBLISH_ERROR_MESSAGE))
+  }
+}
+
 function startPublish(interaction: CommandInteraction): InteractionResponse {
   if (!canPublish(interaction.member, getDiscordEnv().DISCORD_PUBLISHER_IDS)) {
     return ephemeralReply(PUBLISH_FORBIDDEN_MESSAGE)
@@ -81,6 +101,8 @@ export function handleCommand(interaction: CommandInteraction): InteractionRespo
       return { type: RESPONSE_TYPE_DEFERRED_CHANNEL_MESSAGE, data: { flags: MESSAGE_FLAG_EPHEMERAL } }
     case PUBLISH_NOW_COMMAND:
       return startPublish(interaction)
+    case CONNECT_TIKTOK_COMMAND:
+      return connectTikTok(interaction)
     default:
       return ephemeralReply(UNKNOWN_COMMAND_MESSAGE)
   }
