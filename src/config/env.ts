@@ -12,6 +12,7 @@ const LINKEDIN_ORGANIZATION_PATTERN = /^\d+$/
 const LINKEDIN_VERSION_PATTERN = /^\d{6}$/
 const DEFAULT_LINKEDIN_API_VERSION = '202609'
 const optionalSecret = z.string().trim().min(1).optional()
+const DISCORD_ID_PATTERN = /^\d{17,20}$/
 
 export class EnvConfigError extends Error {
   constructor(readonly variables: string[]) {
@@ -40,6 +41,12 @@ const envSchema = z
     LINKEDIN_CLIENT_ID: optionalSecret,
     LINKEDIN_CLIENT_SECRET: optionalSecret,
     LINKEDIN_REFRESH_TOKEN: optionalSecret,
+    TIKTOK_CLIENT_KEY: optionalSecret,
+    TIKTOK_CLIENT_SECRET: optionalSecret,
+    KV_REST_API_URL: z.string().trim().url().optional(),
+    KV_REST_API_TOKEN: optionalSecret,
+    DISCORD_BOT_TOKEN: optionalSecret,
+    DISCORD_TIKTOK_CHANNEL_ID: z.string().trim().regex(DISCORD_ID_PATTERN).optional(),
     LINKEDIN_API_VERSION: z.string().trim().regex(LINKEDIN_VERSION_PATTERN).default(DEFAULT_LINKEDIN_API_VERSION),
   })
   .superRefine((value, context) => {

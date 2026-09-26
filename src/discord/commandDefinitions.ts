@@ -1,5 +1,6 @@
 export const STATUS_COMMAND = 'estado'
 export const PUBLISH_NOW_COMMAND = 'publicar-ahora'
+export const CONNECT_TIKTOK_COMMAND = 'conectar-tiktok'
 
 const CHAT_INPUT_COMMAND_TYPE = 1
 
@@ -18,7 +19,12 @@ export const COMMAND_DEFINITIONS: CommandDefinition[] = [
   },
   {
     name: PUBLISH_NOW_COMMAND,
-    description: 'Publica ahora la siguiente imagen de la cola en Facebook e Instagram',
+    description: 'Publica ahora lo siguiente de cada carpeta y manda a aprobacion lo de TikTok',
+    type: CHAT_INPUT_COMMAND_TYPE,
+  },
+  {
+    name: CONNECT_TIKTOK_COMMAND,
+    description: 'Da el enlace para autorizar la cuenta de TikTok de Manzana Verde',
     type: CHAT_INPUT_COMMAND_TYPE,
   },
 ]

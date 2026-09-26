@@ -36,6 +36,7 @@ Fuera del alcance por ahora:
 | Subcarpetas por red (`Facebook/`, `Instagram/`) con `Publicados/<red>` | done |
 | Videos en Facebook e Instagram (Reels) | pendiente (fase 2) |
 | LinkedIn (imagenes y videos) | done (falta aprobacion de LinkedIn y token) |
+| TikTok con aprobacion en Discord (`/conectar-tiktok`, menu de privacidad, boton publicar) | done (falta app de TikTok y Redis) |
 | YouTube Shorts | pendiente (fase 4) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
@@ -79,6 +80,18 @@ src/drive/client.ts        Cliente autenticado de Drive
 src/drive/download.ts      Descarga de imagenes a memoria
 src/drive/folders.ts       Busqueda de subcarpetas por nombre
 src/linkedin/client.ts     Token, encabezados versionados y renovacion
+src/tiktok/api.ts          Llamadas a la API y consulta de la cuenta
+src/tiktok/approval.ts     Publicacion al aprobar desde Discord
+src/tiktok/oauthState.ts   Estado firmado del enlace de autorizacion
+src/tiktok/proposal.ts     Mensaje de aprobacion con menu y boton
+src/tiktok/publish.ts      Init, subida y espera del estado
+src/tiktok/tokens.ts       OAuth y renovacion con token rotativo
+src/tiktok/upload.ts       Division en partes y subida con Content-Range
+src/lib/kv.ts              Cliente REST de Upstash Redis
+src/discord/botApi.ts      Mensajes al canal con el token del bot
+src/discord/components.ts  Menus y botones de Discord
+src/discord/tiktokComponents.ts  Respuesta al menu y al boton de TikTok
+api/tiktok/callback.ts     Retorno de la autorizacion de TikTok
 src/linkedin/media.ts      Subida de imagenes y videos por partes
 src/linkedin/posts.ts      Creacion del post y escape de texto
 src/linkedin/publish.ts    Flujo completo con reanudacion de videos
@@ -102,6 +115,8 @@ vercel.json                Cron y limites
 | Google Drive API v3 | `files.list`, `files.get` (metadatos y binario), `files.update` |
 | Discord API v10 | `PUT /applications/{app}/guilds/{guild}/commands`, `PATCH /webhooks/{app}/{token}/messages/@original` |
 | LinkedIn REST API (202609) | `/rest/images`, `/rest/videos` (initialize, finalize, estado), `/rest/posts` |
+| TikTok Content Posting API v2 | `oauth/token`, `post/publish/creator_info/query`, `post/publish/video/init`, `post/publish/status/fetch` |
+| Upstash Redis REST | `GET` / `SET` del token de TikTok |
 | Meta Graph API v21.0 | `/{page}/photos`, `/{ig-user}/media`, `/{ig-user}/media_publish` |
 
 ## Decisiones tecnicas
@@ -143,3 +158,8 @@ vercel.json                Cron y limites
   con `Range` y se sube directo, asi un video grande no ocupa la memoria de la
   funcion. El URN del video se guarda apenas termina la subida para no repetirla si
   LinkedIn todavia lo esta procesando.
+- **TikTok con aprobacion humana:** las reglas de TikTok prohiben publicar sin que una
+  persona vea el contenido, elija la privacidad y confirme. El cron propone y el boton
+  de Discord publica. La privacidad elegida vive en el propio mensaje (el menu), asi el
+  boton no depende de otra lectura. El token de TikTok rota en cada renovacion y por eso
+  se guarda en Redis, no en variables de entorno.

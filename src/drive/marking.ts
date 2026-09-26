@@ -5,6 +5,7 @@ import {
   CHANNEL_POST_ID_KEYS,
   LINKEDIN_MEDIA_URN_KEY,
   LOCKED_AT_KEY,
+  TIKTOK_MESSAGE_ID_KEY,
   PUBLISHED_AT_KEY,
   STATUS_KEY,
   STATUS_PUBLISHED,
@@ -30,6 +31,10 @@ export async function releaseImage(fileId: string): Promise<void> {
 
 export async function storeChannelPostId(fileId: string, channel: Channel, postId: string): Promise<void> {
   await patchAppProperties(fileId, { [CHANNEL_POST_ID_KEYS[channel]]: postId })
+}
+
+export async function storeTikTokMessageId(fileId: string, messageId: string): Promise<void> {
+  await patchAppProperties(fileId, { [TIKTOK_MESSAGE_ID_KEY]: messageId })
 }
 
 export async function storeLinkedInMediaUrn(fileId: string, mediaUrn: string): Promise<void> {

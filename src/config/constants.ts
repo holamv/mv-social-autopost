@@ -4,7 +4,7 @@ export const DRIVE_PAGE_SIZE = 200
 export const DRIVE_MAX_PAGES = 10
 export const DRIVE_PAGE_TOKEN_FIELD = 'nextPageToken'
 export const DRIVE_FILE_COLLECTION = 'files'
-export const DRIVE_FILE_PROPERTIES = ['id', 'name', 'mimeType', 'size', 'description', 'appProperties']
+export const DRIVE_FILE_PROPERTIES = ['id', 'name', 'mimeType', 'size', 'description', 'webViewLink', 'appProperties']
 export const FIELD_SEPARATOR = ', '
 export const DRIVE_DOWNLOAD_PROPERTIES = ['id', 'name', 'mimeType', 'size']
 export const DRIVE_MOVE_PROPERTIES = ['id', 'parents']
@@ -26,16 +26,20 @@ export const FACEBOOK_POST_ID_KEY = 'mvFacebookPostId'
 export const INSTAGRAM_MEDIA_ID_KEY = 'mvInstagramMediaId'
 export const LINKEDIN_POST_ID_KEY = 'mvLinkedInPostId'
 export const LINKEDIN_MEDIA_URN_KEY = 'mvLinkedInMediaUrn'
+export const TIKTOK_PUBLISH_ID_KEY = 'mvTikTokPublishId'
+export const TIKTOK_MESSAGE_ID_KEY = 'mvTikTokMessageId'
 export const CHANNEL_POST_ID_KEYS = {
   facebook: FACEBOOK_POST_ID_KEY,
   instagram: INSTAGRAM_MEDIA_ID_KEY,
   linkedin: LINKEDIN_POST_ID_KEY,
+  tiktok: TIKTOK_PUBLISH_ID_KEY,
 } as const
 
 export const ROOT_ROUTE_LABEL = 'Carpeta principal'
 export const FACEBOOK_FOLDER_NAME = 'Facebook'
 export const INSTAGRAM_FOLDER_NAME = 'Instagram'
 export const LINKEDIN_FOLDER_NAME = 'LinkedIn'
+export const TIKTOK_FOLDER_NAME = 'TikTok'
 
 export const BYTES_PER_MEGABYTE = 1048576
 export const MAX_IMAGE_MEGABYTES = 25
