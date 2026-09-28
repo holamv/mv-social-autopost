@@ -32,7 +32,6 @@ export const TITLE_MAX_LENGTH = 2200
 
 export const PRIVACY_SELECT_PREFIX = 'tiktok-privacy:'
 export const PUBLISH_BUTTON_PREFIX = 'tiktok-publish:'
-export const TIKTOK_ROUTE_LABEL = 'TikTok'
 
 export const MUSIC_USAGE_URL = 'https://www.tiktok.com/legal/page/global/music-usage-confirmation/en'
 

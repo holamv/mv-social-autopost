@@ -13,6 +13,17 @@ const LINKEDIN_VERSION_PATTERN = /^\d{6}$/
 const DEFAULT_LINKEDIN_API_VERSION = '202609'
 const optionalSecret = z.string().trim().min(1).optional()
 const DISCORD_ID_PATTERN = /^\d{17,20}$/
+const DEFAULT_SCHEDULE_TIMEZONE = 'America/Lima'
+const TIMEZONE_MESSAGE = 'must be an IANA time zone like America/Lima'
+
+function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone })
+    return true
+  } catch {
+    return false
+  }
+}
 
 export class EnvConfigError extends Error {
   constructor(readonly variables: string[]) {
@@ -41,6 +52,7 @@ const envSchema = z
     LINKEDIN_CLIENT_ID: optionalSecret,
     LINKEDIN_CLIENT_SECRET: optionalSecret,
     LINKEDIN_REFRESH_TOKEN: optionalSecret,
+    SCHEDULE_TIMEZONE: z.string().trim().default(DEFAULT_SCHEDULE_TIMEZONE).refine(isValidTimeZone, TIMEZONE_MESSAGE),
     TIKTOK_CLIENT_KEY: optionalSecret,
     TIKTOK_CLIENT_SECRET: optionalSecret,
     KV_REST_API_URL: z.string().trim().url().optional(),

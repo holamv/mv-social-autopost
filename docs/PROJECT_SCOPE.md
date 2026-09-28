@@ -37,6 +37,7 @@ Fuera del alcance por ahora:
 | Videos en Facebook e Instagram (Reels) | pendiente (fase 2) |
 | LinkedIn (imagenes y videos) | done (falta aprobacion de LinkedIn y token) |
 | TikTok con aprobacion en Discord (`/conectar-tiktok`, menu de privacidad, boton publicar) | done (falta app de TikTok y Redis) |
+| `/publicar-ahora` por red y `/horario` por carpeta (Redis, zona `SCHEDULE_TIMEZONE`) | done |
 | YouTube Shorts | pendiente (fase 4) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
@@ -68,6 +69,8 @@ src/core/deadline.ts       Presupuesto de tiempo
 src/core/pipeline.ts       Orquestacion del ciclo por cola
 src/core/publishers.ts     Publicador de cada red
 src/core/routes.ts         Carpeta principal y subcarpetas por red
+src/core/schedule.ts       Horarios por carpeta, hora local y parseo
+src/discord/scheduleCommand.ts  Comando /horario y lectura de opciones
 src/discord/access.ts      Quien puede usar /publicar-ahora
 src/discord/api.ts         Edicion de la respuesta diferida
 src/discord/commandDefinitions.ts  Nombres y definiciones de comandos
@@ -163,3 +166,5 @@ vercel.json                Cron y limites
   de Discord publica. La privacidad elegida vive en el propio mensaje (el menu), asi el
   boton no depende de otra lectura. El token de TikTok rota en cada renovacion y por eso
   se guarda en Redis, no en variables de entorno.
+- **Horarios fail-closed:** si Redis no responde, el cron no publica esa hora. Es
+  preferible saltar una corrida a publicar fuera del horario pactado con marketing.

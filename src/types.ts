@@ -14,6 +14,8 @@ export type Channel = 'facebook' | 'instagram' | 'linkedin' | 'tiktok'
 
 export type RouteMode = 'publish' | 'approval'
 
+export type RouteKey = 'principal' | 'facebook' | 'instagram' | 'linkedin' | 'tiktok'
+
 export type ChannelPostIds = Partial<Record<Channel, string>>
 
 export interface PendingImage {
@@ -31,6 +33,7 @@ export interface PendingImage {
 }
 
 export interface PublishRoute {
+  key: RouteKey
   label: string
   sourceFolderId: string
   channels: Channel[]

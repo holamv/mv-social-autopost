@@ -4,7 +4,15 @@ import { createDeadline } from '../core/deadline.js'
 import { listQueues, runPublishCycle } from '../core/pipeline.js'
 import { canPublish, type InteractionMember } from './access.js'
 import { editOriginalResponse } from './api.js'
-import { CONNECT_TIKTOK_COMMAND, PUBLISH_NOW_COMMAND, STATUS_COMMAND } from './commandDefinitions.js'
+import {
+  CONNECT_TIKTOK_COMMAND,
+  NETWORK_OPTION,
+  PUBLISH_NOW_COMMAND,
+  SCHEDULE_COMMAND,
+  STATUS_COMMAND,
+} from './commandDefinitions.js'
+import { handleScheduleCommand, readOption, toRouteKey, type OptionValue } from './scheduleCommand.js'
+import type { RouteKey } from '../types.js'
 import { createOAuthState } from '../tiktok/oauthState.js'
 import { buildAuthorizeUrl } from '../tiktok/tokens.js'
 import { getDiscordEnv } from './env.js'
@@ -26,7 +34,7 @@ import {
 
 export interface CommandInteraction {
   token: string
-  data: { name: string }
+  data: { name: string; options?: OptionValue[] }
   member?: InteractionMember
 }
 
@@ -48,7 +56,7 @@ function describeFailure(error: unknown, fallback: string): string {
   return error instanceof EnvConfigError ? formatConfigError(error.variables) : fallback
 }
 
-async function replyWithPublishResult(token: string): Promise<void> {
+async function replyWithPublishResult(token: string, routeKey: RouteKey | undefined): Promise<void> {
   try {
     getEnv()
   } catch (error) {
@@ -58,7 +66,7 @@ async function replyWithPublishResult(token: string): Promise<void> {
   }
 
   const startedAt = Date.now()
-  const result = await runPublishCycle(createDeadline())
+  const result = await runPublishCycle(createDeadline(), { routeKey })
 
   console.log(`[DiscordPublish] Ciclo terminado en ${Date.now() - startedAt} ms`)
   await editOriginalResponse(token, formatPublishResult(result))
@@ -90,7 +98,7 @@ function startPublish(interaction: CommandInteraction): InteractionResponse {
     return ephemeralReply(PUBLISH_FORBIDDEN_MESSAGE)
   }
 
-  waitUntil(replyWithPublishResult(interaction.token))
+  waitUntil(replyWithPublishResult(interaction.token, toRouteKey(readOption(interaction.data.options, NETWORK_OPTION))))
   return { type: RESPONSE_TYPE_DEFERRED_CHANNEL_MESSAGE }
 }
 
@@ -103,6 +111,8 @@ export function handleCommand(interaction: CommandInteraction): InteractionRespo
       return startPublish(interaction)
     case CONNECT_TIKTOK_COMMAND:
       return connectTikTok(interaction)
+    case SCHEDULE_COMMAND:
+      return handleScheduleCommand(interaction)
     default:
       return ephemeralReply(UNKNOWN_COMMAND_MESSAGE)
   }

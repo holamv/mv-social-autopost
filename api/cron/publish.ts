@@ -63,7 +63,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
 
   const startedAt = Date.now()
-  const result = await runPublishCycle(createDeadline())
+  const result = await runPublishCycle(createDeadline(), { respectSchedule: true })
 
   console.log(`[CronPublish] Ciclo terminado en ${Date.now() - startedAt} ms`)
 

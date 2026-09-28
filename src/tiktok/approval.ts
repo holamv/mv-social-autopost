@@ -5,7 +5,7 @@ import { claimImage, markAsPublished, releaseImage, storeChannelPostId } from '.
 import { editOriginalResponse } from '../discord/api.js'
 import type { MessageComponent } from '../discord/components.js'
 import type { PublishRoute } from '../types.js'
-import { PRIVACY_LABELS, TIKTOK_ROUTE_LABEL } from './constants.js'
+import { PRIVACY_LABELS } from './constants.js'
 import { publishTikTokVideo, type TikTokPublishResult } from './publish.js'
 
 export interface ApprovalRequest {
@@ -17,7 +17,7 @@ export interface ApprovalRequest {
 }
 
 async function findTikTokRoute(): Promise<PublishRoute> {
-  const route = (await resolveRoutes()).find((candidate) => candidate.label === TIKTOK_ROUTE_LABEL)
+  const route = (await resolveRoutes()).find((candidate) => candidate.key === 'tiktok')
 
   if (!route) {
     throw new Error('No se encontro la carpeta TikTok en Drive')

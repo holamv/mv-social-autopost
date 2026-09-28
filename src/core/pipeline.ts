@@ -2,6 +2,7 @@ import { getEnv } from '../config/env.js'
 import type { Deadline } from './deadline.js'
 import { CHANNEL_PUBLISHERS } from './publishers.js'
 import { resolveRoutes } from './routes.js'
+import { currentLocalHour, isDue, loadSchedules } from './schedule.js'
 import { listPendingImages } from '../drive/listPending.js'
 import { claimImage, markAsPublished, releaseImage, storeChannelPostId } from '../drive/marking.js'
 import { proposeFile } from '../tiktok/proposal.js'
@@ -14,6 +15,7 @@ import type {
   PublishRoute,
   PublishRunSummary,
   PublishedImage,
+  RouteKey,
   RouteQueue,
 } from '../types.js'
 
@@ -91,15 +93,36 @@ async function publishQueue(queue: RouteQueue, deadline: Deadline, outcome: Batc
   }
 }
 
-export async function listQueues(): Promise<RouteQueue[]> {
-  const routes = await resolveRoutes()
+export interface CycleOptions {
+  routeKey?: RouteKey
+  respectSchedule?: boolean
+}
+
+async function selectRoutes(options: CycleOptions): Promise<PublishRoute[]> {
+  const routes = (await resolveRoutes()).filter((route) => !options.routeKey || route.key === options.routeKey)
+
+  if (!options.respectSchedule) {
+    return routes
+  }
+
+  const schedules = await loadSchedules()
+  const localHour = currentLocalHour(new Date())
+
+  return routes.filter((route) => isDue(schedules[route.key], localHour))
+}
+
+export async function listQueues(options: CycleOptions = {}): Promise<RouteQueue[]> {
+  const routes = await selectRoutes(options)
 
   return Promise.all(routes.map(async (route) => ({ route, pending: await listPendingImages(route.sourceFolderId, route.mimePrefixes) })))
 }
 
-export async function runPublishCycle(deadline: Deadline): Promise<ApiResponse<PublishRunSummary>> {
+export async function runPublishCycle(
+  deadline: Deadline,
+  options: CycleOptions = {},
+): Promise<ApiResponse<PublishRunSummary>> {
   try {
-    const queues = await listQueues()
+    const queues = await listQueues(options)
     const outcome = emptyOutcome()
 
     for (const queue of queues) {

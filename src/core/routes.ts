@@ -11,7 +11,7 @@ import {
 import { linkedInDisabledReason } from '../linkedin/client.js'
 import { tikTokDisabledReason } from '../tiktok/tokens.js'
 import { findChildFolder } from '../drive/folders.js'
-import type { Channel, PublishRoute, RouteMode } from '../types.js'
+import type { Channel, PublishRoute, RouteKey, RouteMode } from '../types.js'
 
 const MOVE_STRATEGY = 'move'
 
@@ -20,6 +20,7 @@ const VIDEOS_ONLY = [VIDEO_MIME_PREFIX]
 const IMAGES_AND_VIDEOS = [IMAGE_MIME_PREFIX, VIDEO_MIME_PREFIX]
 
 interface ChannelFolder {
+  key: RouteKey
   folderName: string
   channels: Channel[]
   mimePrefixes: string[]
@@ -31,6 +32,7 @@ const ALWAYS_ENABLED = (): null => null
 
 const CHANNEL_FOLDERS: ChannelFolder[] = [
   {
+    key: 'facebook',
     folderName: FACEBOOK_FOLDER_NAME,
     channels: ['facebook'],
     mimePrefixes: IMAGES_ONLY,
@@ -38,6 +40,7 @@ const CHANNEL_FOLDERS: ChannelFolder[] = [
     disabledReason: ALWAYS_ENABLED,
   },
   {
+    key: 'instagram',
     folderName: INSTAGRAM_FOLDER_NAME,
     channels: ['instagram'],
     mimePrefixes: IMAGES_ONLY,
@@ -45,6 +48,7 @@ const CHANNEL_FOLDERS: ChannelFolder[] = [
     disabledReason: ALWAYS_ENABLED,
   },
   {
+    key: 'linkedin',
     folderName: LINKEDIN_FOLDER_NAME,
     channels: ['linkedin'],
     mimePrefixes: IMAGES_AND_VIDEOS,
@@ -52,6 +56,7 @@ const CHANNEL_FOLDERS: ChannelFolder[] = [
     disabledReason: linkedInDisabledReason,
   },
   {
+    key: 'tiktok',
     folderName: TIKTOK_FOLDER_NAME,
     channels: ['tiktok'],
     mimePrefixes: VIDEOS_ONLY,
@@ -88,6 +93,7 @@ async function resolveChannelRoute(
   }
 
   return {
+    key: channelFolder.key,
     label: channelFolder.folderName,
     sourceFolderId,
     channels: channelFolder.channels,
@@ -103,6 +109,7 @@ export async function resolveRoutes(): Promise<PublishRoute[]> {
   const publishedRootId = env.MARK_STRATEGY === MOVE_STRATEGY ? env.DRIVE_PUBLISHED_FOLDER_ID || null : null
 
   const rootRoute: PublishRoute = {
+    key: 'principal',
     label: ROOT_ROUTE_LABEL,
     sourceFolderId: env.DRIVE_SOURCE_FOLDER_ID,
     channels: ROOT_CHANNELS,
