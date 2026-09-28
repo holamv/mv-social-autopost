@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { downloadImageToMemory } from '../src/drive/download'
-import { isValidMediaRequest } from '../src/lib/signedUrl'
+import { downloadImageToMemory } from '../src/drive/download.js'
+import { isValidMediaRequest } from '../src/lib/signedUrl.js'
 import {
   DECIMAL_RADIX,
   HTTP_METHOD_GET,
@@ -12,7 +12,7 @@ import {
   MEDIA_EXPIRES_PARAM,
   MEDIA_FILE_PARAM,
   MEDIA_SIGNATURE_PARAM,
-} from '../src/config/constants'
+} from '../src/config/constants.js'
 
 const CONTENT_TYPE_HEADER = 'Content-Type'
 const CACHE_CONTROL_HEADER = 'Cache-Control'
