@@ -8,6 +8,7 @@ Permite manejar la publicacion desde el Discord de Manzana Verde sin esperar al 
 | `/publicar-ahora [red]` | Administradores y los IDs de usuario o rol en `DISCORD_PUBLISHER_IDS` | Publica ya lo siguiente de todas las carpetas o solo de la red elegida. No mira los horarios |
 | `/horario [red] [horas]` | Ver: cualquiera. Cambiar: los mismos que `/publicar-ahora` | Sin opciones muestra los horarios. Con `red` y `horas` (`9,13,19`, `siempre` o `pausa`) los cambia |
 | `/conectar-tiktok` | Los mismos que `/publicar-ahora` | Da un enlace firmado (vence en 10 min) para autorizar la cuenta de TikTok de MV |
+| `/conectar-youtube` | Los mismos que `/publicar-ahora` | Igual, para el canal de YouTube. Cada enlace solo sirve para su red |
 
 ## Aprobacion de TikTok
 
@@ -94,7 +95,7 @@ export DISCORD_GUILD_ID='619991595613290496'
 npm run discord:register
 ```
 
-Debe imprimir `Registered commands: /estado, /publicar-ahora, /horario, /conectar-tiktok`. Se vuelve a correr solo
+Debe imprimir `Registered commands: /estado, /publicar-ahora, /horario, /conectar-tiktok, /conectar-youtube`. Se vuelve a correr solo
 si cambian los comandos en `src/discord/commandDefinitions.ts`.
 
 ### 6. Dar acceso a `/publicar-ahora`

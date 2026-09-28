@@ -14,6 +14,9 @@ const DEFAULT_LINKEDIN_API_VERSION = '202609'
 const optionalSecret = z.string().trim().min(1).optional()
 const DISCORD_ID_PATTERN = /^\d{17,20}$/
 const DEFAULT_SCHEDULE_TIMEZONE = 'America/Lima'
+const YOUTUBE_PRIVACY_LEVELS = ['public', 'unlisted', 'private'] as const
+const YOUTUBE_CATEGORY_PATTERN = /^\d+$/
+const DEFAULT_YOUTUBE_CATEGORY_ID = '26'
 const TIMEZONE_MESSAGE = 'must be an IANA time zone like America/Lima'
 
 function isValidTimeZone(timeZone: string): boolean {
@@ -53,6 +56,10 @@ const envSchema = z
     LINKEDIN_CLIENT_SECRET: optionalSecret,
     LINKEDIN_REFRESH_TOKEN: optionalSecret,
     SCHEDULE_TIMEZONE: z.string().trim().default(DEFAULT_SCHEDULE_TIMEZONE).refine(isValidTimeZone, TIMEZONE_MESSAGE),
+    YOUTUBE_CLIENT_ID: optionalSecret,
+    YOUTUBE_CLIENT_SECRET: optionalSecret,
+    YOUTUBE_PRIVACY: z.enum(YOUTUBE_PRIVACY_LEVELS).default(YOUTUBE_PRIVACY_LEVELS[0]),
+    YOUTUBE_CATEGORY_ID: z.string().trim().regex(YOUTUBE_CATEGORY_PATTERN).default(DEFAULT_YOUTUBE_CATEGORY_ID),
     TIKTOK_CLIENT_KEY: optionalSecret,
     TIKTOK_CLIENT_SECRET: optionalSecret,
     KV_REST_API_URL: z.string().trim().url().optional(),

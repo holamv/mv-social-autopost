@@ -38,7 +38,7 @@ Fuera del alcance por ahora:
 | LinkedIn (imagenes y videos) | done (falta aprobacion de LinkedIn y token) |
 | TikTok con aprobacion en Discord (`/conectar-tiktok`, menu de privacidad, boton publicar) | done (falta app de TikTok y Redis) |
 | `/publicar-ahora` por red y `/horario` por carpeta (Redis, zona `SCHEDULE_TIMEZONE`) | done |
-| YouTube Shorts | pendiente (fase 4) |
+| YouTube Shorts (`YouTube/`, subida en streaming desde Drive, `/conectar-youtube`) | done (falta cliente OAuth y conectar el canal) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
 | Publicacion en Facebook por subida binaria directa | done |
@@ -84,8 +84,13 @@ src/drive/download.ts      Descarga de imagenes a memoria
 src/drive/folders.ts       Busqueda de subcarpetas por nombre
 src/linkedin/client.ts     Token, encabezados versionados y renovacion
 src/tiktok/api.ts          Llamadas a la API y consulta de la cuenta
+src/youtube/auth.ts        OAuth de Google y refresh token en Redis
+src/youtube/publish.ts     Titulo, descripcion y subida del Short
+src/lib/oauthState.ts      Estado firmado por red para enlaces de autorizacion
+src/lib/callbackPage.ts    Pagina de respuesta de los callbacks OAuth
+src/discord/connectCommands.ts  /conectar-tiktok y /conectar-youtube
+api/youtube/callback.ts    Retorno de la autorizacion de Google
 src/tiktok/approval.ts     Publicacion al aprobar desde Discord
-src/tiktok/oauthState.ts   Estado firmado del enlace de autorizacion
 src/tiktok/proposal.ts     Mensaje de aprobacion con menu y boton
 src/tiktok/publish.ts      Init, subida y espera del estado
 src/tiktok/tokens.ts       OAuth y renovacion con token rotativo
@@ -168,3 +173,7 @@ vercel.json                Cron y limites
   se guarda en Redis, no en variables de entorno.
 - **Horarios fail-closed:** si Redis no responde, el cron no publica esa hora. Es
   preferible saltar una corrida a publicar fuera del horario pactado con marketing.
+- **YouTube por streaming:** el video pasa de Drive a `videos.insert` como stream, sin
+  cargarlo en memoria; la libreria `googleapis` renueva el access token con el refresh
+  token guardado en Redis. Una cuenta de servicio no puede subir a un canal, por eso se
+  autoriza con la cuenta de Google del canal via `/conectar-youtube`.

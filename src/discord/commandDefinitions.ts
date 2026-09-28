@@ -1,6 +1,7 @@
 export const STATUS_COMMAND = 'estado'
 export const PUBLISH_NOW_COMMAND = 'publicar-ahora'
 export const CONNECT_TIKTOK_COMMAND = 'conectar-tiktok'
+export const CONNECT_YOUTUBE_COMMAND = 'conectar-youtube'
 export const SCHEDULE_COMMAND = 'horario'
 
 export const NETWORK_OPTION = 'red'
@@ -37,6 +38,7 @@ export const NETWORK_CHOICES: CommandChoice[] = [
   { name: 'Instagram', value: 'instagram' },
   { name: 'LinkedIn', value: 'linkedin' },
   { name: 'TikTok', value: 'tiktok' },
+  { name: 'YouTube Shorts', value: 'youtube' },
 ]
 
 export const COMMAND_DEFINITIONS: CommandDefinition[] = [
@@ -74,6 +76,11 @@ export const COMMAND_DEFINITIONS: CommandDefinition[] = [
   {
     name: CONNECT_TIKTOK_COMMAND,
     description: 'Da el enlace para autorizar la cuenta de TikTok de Manzana Verde',
+    type: CHAT_INPUT_COMMAND_TYPE,
+  },
+  {
+    name: CONNECT_YOUTUBE_COMMAND,
+    description: 'Da el enlace para autorizar el canal de YouTube de Manzana Verde',
     type: CHAT_INPUT_COMMAND_TYPE,
   },
 ]

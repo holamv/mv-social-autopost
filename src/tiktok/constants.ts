@@ -12,8 +12,6 @@ export const REFRESH_TOKEN_GRANT = 'refresh_token'
 export const RESPONSE_TYPE_CODE = 'code'
 export const TOKEN_STORE_KEY = 'tiktok:tokens'
 export const TOKEN_EXPIRY_SAFETY_MS = 300000
-export const OAUTH_STATE_TTL_MINUTES = 10
-export const OAUTH_STATE_PURPOSE = 'tiktok-oauth'
 
 export const JSON_UTF8_CONTENT_TYPE = 'application/json; charset=UTF-8'
 export const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded'

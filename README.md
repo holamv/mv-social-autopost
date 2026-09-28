@@ -50,10 +50,11 @@ Carpeta de origen
 ├── Facebook/         → solo Facebook (imagenes)
 ├── Instagram/        → solo Instagram (imagenes)
 ├── LinkedIn/         → solo LinkedIn (imagenes y videos MP4)
-└── TikTok/           → TikTok con aprobacion en Discord (videos MP4)
+├── TikTok/           → TikTok con aprobacion en Discord (videos MP4)
+└── YouTube/          → YouTube Shorts (videos verticales)
 ```
 
-- Los nombres de las subcarpetas son exactos: `Facebook`, `Instagram`, `LinkedIn` y `TikTok`. Si una no
+- Los nombres de las subcarpetas son exactos: `Facebook`, `Instagram`, `LinkedIn`, `TikTok` y `YouTube`. Si una no
   existe, esa cola simplemente no se procesa.
 - Cada corrida publica hasta `BATCH_SIZE` archivos **por cola**, en orden numerico.
 - Con `MARK_STRATEGY='move'`, lo publicado se mueve a `Publicados/` (sueltas) o a
@@ -234,6 +235,28 @@ Mientras TikTok no audite la app, todo lo que se publica queda en **Solo yo** y 
 limite de 5 cuentas por dia. Para la auditoria hay que mostrar el flujo de aprobacion.
 Videos MP4 de hasta 200 MB: hasta 64 MB se suben en una parte, mas grandes en partes
 de 10 MB leidas de Drive con `Range`.
+
+## 2d. Configurar YouTube Shorts (opcional)
+
+Sube solo cada video de `YouTube/` al canal de MV. YouTube decide que es un Short si
+el video es vertical y dura hasta 3 minutos; ademas se agrega `#Shorts` a la
+descripcion. Titulo: primera linea de la descripcion del archivo en Drive (o el nombre
+del archivo), hasta 100 caracteres.
+
+1. En Google Cloud, en el mismo proyecto de la cuenta de servicio: **APIs y servicios →
+   Biblioteca → YouTube Data API v3 → Habilitar**.
+2. **Pantalla de consentimiento de OAuth**: tipo **Externo**, y en estado de publicacion
+   **En produccion** (en "Prueba" los tokens vencen a los 7 dias). Google mostrara un
+   aviso de "app no verificada" al conectar: se acepta con "Avanzado → Ir a...".
+3. **Credenciales → Crear credenciales → ID de cliente de OAuth → Aplicacion web**, con
+   URI de redireccion `https://<dominio-de-produccion>/api/youtube/callback`.
+4. Cargar `YOUTUBE_CLIENT_ID` y `YOUTUBE_CLIENT_SECRET` en Vercel y redeployar.
+5. En Discord, `/conectar-youtube` → abrir el enlace con la cuenta de Google que
+   administra el canal.
+
+Mientras Google no audite el proyecto (formulario "YouTube API Services - Audit and
+Quota Extension"), los videos subidos por API quedan **privados**; se pueden pasar a
+publicos a mano en YouTube Studio. Cada subida gasta 1 unidad de la cuota de subidas.
 
 ## 3. Variables de entorno
 

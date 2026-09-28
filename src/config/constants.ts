@@ -28,11 +28,13 @@ export const LINKEDIN_POST_ID_KEY = 'mvLinkedInPostId'
 export const LINKEDIN_MEDIA_URN_KEY = 'mvLinkedInMediaUrn'
 export const TIKTOK_PUBLISH_ID_KEY = 'mvTikTokPublishId'
 export const TIKTOK_MESSAGE_ID_KEY = 'mvTikTokMessageId'
+export const YOUTUBE_VIDEO_ID_KEY = 'mvYouTubeVideoId'
 export const CHANNEL_POST_ID_KEYS = {
   facebook: FACEBOOK_POST_ID_KEY,
   instagram: INSTAGRAM_MEDIA_ID_KEY,
   linkedin: LINKEDIN_POST_ID_KEY,
   tiktok: TIKTOK_PUBLISH_ID_KEY,
+  youtube: YOUTUBE_VIDEO_ID_KEY,
 } as const
 
 export const ROOT_ROUTE_LABEL = 'Carpeta principal'
@@ -40,6 +42,7 @@ export const FACEBOOK_FOLDER_NAME = 'Facebook'
 export const INSTAGRAM_FOLDER_NAME = 'Instagram'
 export const LINKEDIN_FOLDER_NAME = 'LinkedIn'
 export const TIKTOK_FOLDER_NAME = 'TikTok'
+export const YOUTUBE_FOLDER_NAME = 'YouTube'
 
 export const BYTES_PER_MEGABYTE = 1048576
 export const MAX_IMAGE_MEGABYTES = 25

@@ -10,11 +10,11 @@ export interface ApiResponse<T> {
   }
 }
 
-export type Channel = 'facebook' | 'instagram' | 'linkedin' | 'tiktok'
+export type Channel = 'facebook' | 'instagram' | 'linkedin' | 'tiktok' | 'youtube'
 
 export type RouteMode = 'publish' | 'approval'
 
-export type RouteKey = 'principal' | 'facebook' | 'instagram' | 'linkedin' | 'tiktok'
+export type RouteKey = 'principal' | 'facebook' | 'instagram' | 'linkedin' | 'tiktok' | 'youtube'
 
 export type ChannelPostIds = Partial<Record<Channel, string>>
 

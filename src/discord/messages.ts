@@ -15,9 +15,9 @@ export function formatConfigError(variables: string[]): string {
   return `Hay variables mal configuradas en Vercel: ${names}. Corrigelas en Settings → Environment Variables y redeploya.`
 }
 
-export function formatTikTokConnectLink(url: string): string {
+export function formatConnectLink(accountLabel: string, url: string): string {
   return [
-    'Abre este enlace con la cuenta de TikTok de Manzana Verde y acepta los permisos.',
+    `Abre este enlace con ${accountLabel} de Manzana Verde y acepta los permisos.`,
     'El enlace vence en 10 minutos:',
     url,
   ].join(LINE_BREAK)
@@ -52,6 +52,7 @@ const CHANNEL_LABELS: Record<Channel, string> = {
   instagram: 'Instagram',
   linkedin: 'LinkedIn',
   tiktok: 'TikTok',
+  youtube: 'YouTube Shorts',
 }
 const AWAITING_APPROVAL_SUFFIX = ' (esperando aprobacion en Discord)'
 const NOTHING_NEW_MESSAGE = 'No habia nada nuevo para publicar. Lo pendiente de TikTok espera aprobacion en Discord.'
