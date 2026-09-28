@@ -76,6 +76,19 @@ publica. Ver README, seccion 2b.
 | `LINKEDIN_REFRESH_TOKEN` | no | Solo si LinkedIn aprobo refresh tokens para la app (1 año) |
 | `LINKEDIN_API_VERSION` | no, default `202609` | Version `YYYYMM` de la API. LinkedIn retira cada version al año |
 
+## YouTube
+
+Opcionales. Sin ellas la carpeta `YouTube/` no se procesa y `/estado` lo dice.
+
+| Variable | Obligatoria | Default | De donde sale |
+|---|---|---|---|
+| `YOUTUBE_CLIENT_ID` | para YouTube | — | Google Cloud → Credenciales → ID de cliente OAuth (web) |
+| `YOUTUBE_CLIENT_SECRET` | para YouTube | — | Misma pantalla. Secreto |
+| `YOUTUBE_PRIVACY` | no | `public` | `public`, `unlisted` o `private`. Sin auditoria, Google fuerza `private` |
+| `YOUTUBE_CATEGORY_ID` | no | `26` | Categoria del video (26 = Consejos y estilo) |
+
+El token del canal no va en Vercel: se guarda en Redis al usar `/conectar-youtube`.
+
 ## TikTok
 
 Opcionales. Si falta cualquiera, la carpeta `TikTok/` no se procesa y `/estado` dice cual.

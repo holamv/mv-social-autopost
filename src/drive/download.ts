@@ -1,3 +1,4 @@
+import type { Readable } from 'node:stream'
 import type { drive_v3 } from 'googleapis'
 import { getDriveClient } from './client.js'
 import {
@@ -84,4 +85,13 @@ export async function downloadByteRange(fileId: string, firstByte: number, lastB
   )
 
   return new Uint8Array(response.data as ArrayBuffer)
+}
+
+export async function downloadStream(fileId: string): Promise<Readable> {
+  const response = await getDriveClient().files.get(
+    { fileId, alt: DRIVE_MEDIA_ALT, supportsAllDrives: true },
+    { responseType: 'stream' },
+  )
+
+  return response.data as Readable
 }

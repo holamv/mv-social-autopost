@@ -7,7 +7,9 @@ import {
   ROOT_ROUTE_LABEL,
   TIKTOK_FOLDER_NAME,
   VIDEO_MIME_PREFIX,
+  YOUTUBE_FOLDER_NAME,
 } from '../config/constants.js'
+import { youTubeDisabledReason } from '../youtube/auth.js'
 import { linkedInDisabledReason } from '../linkedin/client.js'
 import { tikTokDisabledReason } from '../tiktok/tokens.js'
 import { findChildFolder } from '../drive/folders.js'
@@ -54,6 +56,14 @@ const CHANNEL_FOLDERS: ChannelFolder[] = [
     mimePrefixes: IMAGES_AND_VIDEOS,
     mode: 'publish',
     disabledReason: linkedInDisabledReason,
+  },
+  {
+    key: 'youtube',
+    folderName: YOUTUBE_FOLDER_NAME,
+    channels: ['youtube'],
+    mimePrefixes: VIDEOS_ONLY,
+    mode: 'publish',
+    disabledReason: youTubeDisabledReason,
   },
   {
     key: 'tiktok',
