@@ -4,8 +4,11 @@ import { kvGet, kvSet } from '../lib/kv.js'
 
 const CALLBACK_ROUTE = '/api/youtube/callback'
 const UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload'
+const READONLY_SCOPE = 'https://www.googleapis.com/auth/youtube.readonly'
 const OFFLINE_ACCESS = 'offline'
-const FORCE_CONSENT = 'consent'
+const PICK_ACCOUNT_AND_CONSENT = 'select_account consent'
+const CHANNEL_PARTS = ['snippet']
+const UNKNOWN_CHANNEL = 'canal sin nombre'
 const TOKEN_STORE_KEY = 'youtube:tokens'
 const API_VERSION = 'v3'
 const TOKENS_EVENT = 'tokens'
@@ -39,8 +42,8 @@ function createOAuthClient() {
 export function buildYouTubeAuthorizeUrl(state: string): string {
   return createOAuthClient().generateAuthUrl({
     access_type: OFFLINE_ACCESS,
-    prompt: FORCE_CONSENT,
-    scope: [UPLOAD_SCOPE],
+    prompt: PICK_ACCOUNT_AND_CONSENT,
+    scope: [UPLOAD_SCOPE, READONLY_SCOPE],
     state,
   })
 }
@@ -51,14 +54,24 @@ async function saveRefreshToken(refreshToken: string): Promise<void> {
   await kvSet(TOKEN_STORE_KEY, JSON.stringify(stored))
 }
 
-export async function connectYouTube(code: string): Promise<void> {
-  const { tokens } = await createOAuthClient().getToken(code)
+async function readChannelTitle(auth: ReturnType<typeof createOAuthClient>): Promise<string> {
+  const response = await google.youtube({ version: API_VERSION, auth }).channels.list({ part: CHANNEL_PARTS, mine: true })
+
+  return response.data.items?.[0]?.snippet?.title ?? UNKNOWN_CHANNEL
+}
+
+export async function connectYouTube(code: string): Promise<string> {
+  const auth = createOAuthClient()
+  const { tokens } = await auth.getToken(code)
 
   if (!tokens.refresh_token) {
     throw new Error('Google no devolvio refresh token: quita el acceso de la app en la cuenta de Google y vuelve a conectar')
   }
 
+  auth.setCredentials(tokens)
   await saveRefreshToken(tokens.refresh_token)
+
+  return readChannelTitle(auth)
 }
 
 export async function getYouTubeClient(): Promise<youtube_v3.Youtube> {
