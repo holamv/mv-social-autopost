@@ -60,6 +60,7 @@ necesita alcanzar `/api/media`.
 |---|---|---|---|
 | `BATCH_SIZE` | no | `1` | Imagenes por ejecucion |
 | `DEFAULT_CAPTION` | no | vacio | Texto a usar cuando el archivo no tiene descripcion en Drive |
+| `SCHEDULE_TIMEZONE` | no | `America/Lima` | Zona horaria de los horarios de `/horario` (formato IANA, ej. `America/Bogota`) |
 
 ## LinkedIn
 

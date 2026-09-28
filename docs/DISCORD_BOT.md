@@ -5,7 +5,8 @@ Permite manejar la publicacion desde el Discord de Manzana Verde sin esperar al 
 | Comando | Quien puede usarlo | Que hace |
 |---|---|---|
 | `/estado` | Cualquier miembro | Muestra cuantas imagenes quedan y las 5 proximas. Solo lo ve quien lo pide |
-| `/publicar-ahora` | Administradores y los IDs de usuario o rol en `DISCORD_PUBLISHER_IDS` | Corre un ciclo de publicacion igual al del cron y deja el resultado en el canal |
+| `/publicar-ahora [red]` | Administradores y los IDs de usuario o rol en `DISCORD_PUBLISHER_IDS` | Publica ya lo siguiente de todas las carpetas o solo de la red elegida. No mira los horarios |
+| `/horario [red] [horas]` | Ver: cualquiera. Cambiar: los mismos que `/publicar-ahora` | Sin opciones muestra los horarios. Con `red` y `horas` (`9,13,19`, `siempre` o `pausa`) los cambia |
 | `/conectar-tiktok` | Los mismos que `/publicar-ahora` | Da un enlace firmado (vence en 10 min) para autorizar la cuenta de TikTok de MV |
 
 ## Aprobacion de TikTok
@@ -93,7 +94,7 @@ export DISCORD_GUILD_ID='619991595613290496'
 npm run discord:register
 ```
 
-Debe imprimir `Registered commands: /estado, /publicar-ahora`. Se vuelve a correr solo
+Debe imprimir `Registered commands: /estado, /publicar-ahora, /horario, /conectar-tiktok`. Se vuelve a correr solo
 si cambian los comandos en `src/discord/commandDefinitions.ts`.
 
 ### 6. Dar acceso a `/publicar-ahora`
@@ -106,3 +107,18 @@ solo ve esa persona.
 Para sacar un ID: Discord → Ajustes → Avanzado → activar **Modo desarrollador**, y
 despues clic derecho sobre la persona o el rol → **Copiar ID**. Cambiar la lista
 requiere redeploy, no volver a registrar comandos.
+
+## Horarios
+
+El cron corre cada hora en punto. Cada carpeta (principal, Facebook, Instagram,
+LinkedIn, TikTok) puede tener sus horas permitidas, en la zona `SCHEDULE_TIMEZONE`
+(por defecto `America/Lima`):
+
+- sin horario: publica en cada corrida (cada hora);
+- `9,13,19`: solo en las corridas de esas horas;
+- `pausa`: el cron no la toca.
+
+Se guardan en Redis, asi que cambian al instante sin redeploy. `/publicar-ahora` los
+ignora a proposito. En TikTok, el horario decide cuando llegan los videos a aprobacion.
+Si Redis no responde, el cron no publica nada en esa corrida en vez de publicar fuera
+de horario.

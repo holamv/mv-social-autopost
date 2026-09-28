@@ -1,4 +1,6 @@
 import type { ApiResponse, Channel, PublishRunSummary, RouteQueue } from '../types.js'
+import { PAUSED, type RouteSchedule, type Schedules } from '../core/schedule.js'
+import { NETWORK_CHOICES } from './commandDefinitions.js'
 import { LINE_BREAK, MESSAGE_CONTENT_MAX_LENGTH, QUEUE_PREVIEW_SIZE, TRUNCATION_SUFFIX } from './constants.js'
 
 export const UNKNOWN_COMMAND_MESSAGE = 'No conozco ese comando.'
@@ -19,6 +21,22 @@ export function formatTikTokConnectLink(url: string): string {
     'El enlace vence en 10 minutos:',
     url,
   ].join(LINE_BREAK)
+}
+
+function describeSchedule(schedule: RouteSchedule | undefined): string {
+  if (!schedule) {
+    return 'cada hora'
+  }
+
+  return schedule === PAUSED ? 'en pausa' : `a las ${schedule.join(', ')} h`
+}
+
+export function formatSchedules(schedules: Schedules, timeZone: string): string {
+  const lines = NETWORK_CHOICES.map((choice) => {
+    return `**${choice.name}:** ${describeSchedule(schedules[choice.value as keyof Schedules])}`
+  })
+
+  return [`🕒 Horarios de publicacion (${timeZone}):`, ...lines].join(LINE_BREAK)
 }
 
 function fitToDiscord(content: string): string {
