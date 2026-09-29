@@ -9,6 +9,7 @@ const INSTAGRAM_FIELDS = 'permalink,timestamp,like_count,comments_count'
 const FACEBOOK_REACH_METRIC = 'post_impressions_unique'
 const INSTAGRAM_INSIGHT_METRICS = 'views,saved'
 const INSIGHT_VALUE_FIELDS = 'name,values'
+const FOLLOWERS_FIELD = 'followers_count'
 
 interface GraphList<T> {
   data?: T[]
@@ -33,6 +34,10 @@ interface InstagramMedia {
   timestamp?: string
   like_count?: number
   comments_count?: number
+}
+
+interface FollowerProfile {
+  followers_count?: number
 }
 
 interface Insight {
@@ -97,4 +102,18 @@ export async function collectInstagram(): Promise<PostMetrics[]> {
   const media = (payload.data ?? []).filter((item) => item.permalink)
 
   return Promise.all(media.map((item) => instagramEntry(item, item.permalink ?? '')))
+}
+
+async function readFollowers(accountId: string): Promise<number | null> {
+  const profile = await graphGet<FollowerProfile>(accountId, FOLLOWERS_FIELD)
+
+  return toCount(profile.followers_count)
+}
+
+export function readFacebookFollowers(): Promise<number | null> {
+  return readFollowers(getEnv().META_PAGE_ID)
+}
+
+export function readInstagramFollowers(): Promise<number | null> {
+  return readFollowers(getEnv().META_INSTAGRAM_USER_ID)
 }
