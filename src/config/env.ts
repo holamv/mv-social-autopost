@@ -1,14 +1,46 @@
 import { z } from 'zod'
-import { DEFAULT_BATCH_SIZE, ESCAPED_PRIVATE_KEY_NEWLINE, FIELD_SEPARATOR, REAL_NEWLINE } from './constants.js'
+import { DEFAULT_BATCH_SIZE } from './constants.js'
+import { isReadablePrivateKey, normalizePrivateKey } from './privateKey.js'
 
 const MARK_STRATEGIES = ['properties', 'move'] as const
+const DRIVE_ID_PATTERN = /^[A-Za-z0-9_-]+$/
+const DRIVE_ID_MESSAGE = 'must be only the folder ID, without URL parts like ?hl='
+const PRIVATE_KEY_MESSAGE = 'is not a readable PEM private key'
+
+const driveFolderId = z.string().trim().regex(DRIVE_ID_PATTERN, DRIVE_ID_MESSAGE)
+const LINKEDIN_ORGANIZATION_PATTERN = /^\d+$/
+const LINKEDIN_VERSION_PATTERN = /^\d{6}$/
+const DEFAULT_LINKEDIN_API_VERSION = '202609'
+const optionalSecret = z.string().trim().min(1).optional()
+const DISCORD_ID_PATTERN = /^\d{17,20}$/
+const DEFAULT_SCHEDULE_TIMEZONE = 'America/Lima'
+const YOUTUBE_PRIVACY_LEVELS = ['public', 'unlisted', 'private'] as const
+const YOUTUBE_CATEGORY_PATTERN = /^\d+$/
+const DEFAULT_YOUTUBE_CATEGORY_ID = '26'
+const TIMEZONE_MESSAGE = 'must be an IANA time zone like America/Lima'
+
+function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone })
+    return true
+  } catch {
+    return false
+  }
+}
+
+export class EnvConfigError extends Error {
+  constructor(readonly variables: string[]) {
+    super(`Invalid environment configuration: ${variables.join(', ')}`)
+    this.name = 'EnvConfigError'
+  }
+}
 
 const envSchema = z
   .object({
     GOOGLE_CLIENT_EMAIL: z.string().email(),
-    GOOGLE_PRIVATE_KEY: z.string().min(1),
-    DRIVE_SOURCE_FOLDER_ID: z.string().min(1),
-    DRIVE_PUBLISHED_FOLDER_ID: z.string().optional(),
+    GOOGLE_PRIVATE_KEY: z.string().min(1).transform(normalizePrivateKey).refine(isReadablePrivateKey, PRIVATE_KEY_MESSAGE),
+    DRIVE_SOURCE_FOLDER_ID: driveFolderId,
+    DRIVE_PUBLISHED_FOLDER_ID: driveFolderId.or(z.literal('')).optional(),
     MARK_STRATEGY: z.enum(MARK_STRATEGIES).default(MARK_STRATEGIES[0]),
     META_GRAPH_ACCESS_TOKEN: z.string().min(1),
     META_PAGE_ID: z.string().min(1),
@@ -16,8 +48,26 @@ const envSchema = z
     PUBLIC_BASE_URL: z.string().url(),
     MEDIA_SIGNING_SECRET: z.string().min(1),
     CRON_SECRET: z.string().min(1),
+    METRICS_API_TOKEN: optionalSecret,
     BATCH_SIZE: z.coerce.number().int().positive().default(DEFAULT_BATCH_SIZE),
     DEFAULT_CAPTION: z.string().default(''),
+    LINKEDIN_ORGANIZATION_ID: z.string().trim().regex(LINKEDIN_ORGANIZATION_PATTERN).optional(),
+    LINKEDIN_ACCESS_TOKEN: optionalSecret,
+    LINKEDIN_CLIENT_ID: optionalSecret,
+    LINKEDIN_CLIENT_SECRET: optionalSecret,
+    LINKEDIN_REFRESH_TOKEN: optionalSecret,
+    SCHEDULE_TIMEZONE: z.string().trim().default(DEFAULT_SCHEDULE_TIMEZONE).refine(isValidTimeZone, TIMEZONE_MESSAGE),
+    YOUTUBE_CLIENT_ID: optionalSecret,
+    YOUTUBE_CLIENT_SECRET: optionalSecret,
+    YOUTUBE_PRIVACY: z.enum(YOUTUBE_PRIVACY_LEVELS).default(YOUTUBE_PRIVACY_LEVELS[0]),
+    YOUTUBE_CATEGORY_ID: z.string().trim().regex(YOUTUBE_CATEGORY_PATTERN).default(DEFAULT_YOUTUBE_CATEGORY_ID),
+    TIKTOK_CLIENT_KEY: optionalSecret,
+    TIKTOK_CLIENT_SECRET: optionalSecret,
+    KV_REST_API_URL: z.string().trim().url().optional(),
+    KV_REST_API_TOKEN: optionalSecret,
+    DISCORD_BOT_TOKEN: optionalSecret,
+    DISCORD_TIKTOK_CHANNEL_ID: z.string().trim().regex(DISCORD_ID_PATTERN).optional(),
+    LINKEDIN_API_VERSION: z.string().trim().regex(LINKEDIN_VERSION_PATTERN).default(DEFAULT_LINKEDIN_API_VERSION),
   })
   .superRefine((value, context) => {
     if (value.MARK_STRATEGY === MARK_STRATEGIES[1] && !value.DRIVE_PUBLISHED_FOLDER_ID) {
@@ -46,14 +96,10 @@ export function getEnv(): Env {
       code: issue.code,
     }))
     console.error('[Env] Invalid environment variables:', JSON.stringify(failingVariables))
-    const missing = failingVariables.map(({ variable }) => variable).join(FIELD_SEPARATOR)
-    throw new Error(`Invalid environment configuration: ${missing}`)
+    throw new EnvConfigError(failingVariables.map(({ variable }) => variable))
   }
 
-  cachedEnv = {
-    ...parsed.data,
-    GOOGLE_PRIVATE_KEY: parsed.data.GOOGLE_PRIVATE_KEY.replace(ESCAPED_PRIVATE_KEY_NEWLINE, REAL_NEWLINE),
-  }
+  cachedEnv = parsed.data
 
   return cachedEnv
 }

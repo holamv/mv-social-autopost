@@ -1,0 +1,104 @@
+import type { ApiResponse, Channel, PublishRunSummary, RouteQueue } from '../types.js'
+import { PAUSED, type RouteSchedule, type Schedules } from '../core/schedule.js'
+import { NETWORK_CHOICES } from './commandDefinitions.js'
+import { LINE_BREAK, MESSAGE_CONTENT_MAX_LENGTH, QUEUE_PREVIEW_SIZE, TRUNCATION_SUFFIX } from './constants.js'
+
+export const UNKNOWN_COMMAND_MESSAGE = 'No conozco ese comando.'
+export const PUBLISH_FORBIDDEN_MESSAGE =
+  'No tienes permiso para publicar. Pide a un admin que agregue tu ID o tu rol a DISCORD_PUBLISHER_IDS.'
+export const STATUS_ERROR_MESSAGE = 'No pude leer la carpeta de Drive. Revisa los logs en Vercel.'
+export const PUBLISH_ERROR_MESSAGE = 'La publicacion fallo antes de empezar. Revisa los logs en Vercel.'
+
+export function formatConfigError(variables: string[]): string {
+  const names = variables.map((name) => `\`${name}\``).join(', ')
+
+  return `Hay variables mal configuradas en Vercel: ${names}. Corrigelas en Settings → Environment Variables y redeploya.`
+}
+
+export function formatConnectLink(accountLabel: string, url: string): string {
+  return [
+    `Abre este enlace con ${accountLabel} de Manzana Verde y acepta los permisos.`,
+    'El enlace vence en 10 minutos:',
+    url,
+  ].join(LINE_BREAK)
+}
+
+function describeSchedule(schedule: RouteSchedule | undefined): string {
+  if (!schedule) {
+    return 'cada hora'
+  }
+
+  return schedule === PAUSED ? 'en pausa' : `a las ${schedule.join(', ')} h`
+}
+
+export function formatSchedules(schedules: Schedules, timeZone: string): string {
+  const lines = NETWORK_CHOICES.map((choice) => {
+    return `**${choice.name}:** ${describeSchedule(schedules[choice.value as keyof Schedules])}`
+  })
+
+  return [`🕒 Horarios de publicacion (${timeZone}):`, ...lines].join(LINE_BREAK)
+}
+
+function fitToDiscord(content: string): string {
+  if (content.length <= MESSAGE_CONTENT_MAX_LENGTH) {
+    return content
+  }
+
+  return content.slice(0, MESSAGE_CONTENT_MAX_LENGTH - TRUNCATION_SUFFIX.length) + TRUNCATION_SUFFIX
+}
+
+const CHANNEL_LABELS: Record<Channel, string> = {
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  tiktok: 'TikTok',
+  youtube: 'YouTube Shorts',
+}
+const AWAITING_APPROVAL_SUFFIX = ' (esperando aprobacion en Discord)'
+const NOTHING_NEW_MESSAGE = 'No habia nada nuevo para publicar. Lo pendiente de TikTok espera aprobacion en Discord.'
+
+function describeChannels(channels: Channel[]): string {
+  return channels.map((channel) => CHANNEL_LABELS[channel]).join(' + ')
+}
+
+function formatQueue(queue: RouteQueue): string[] {
+  const disabled = queue.route.disabledReason ? ` ⚠️ no se publica (${queue.route.disabledReason})` : ''
+  const header = `**${queue.route.label}** → ${describeChannels(queue.route.channels)}: ${queue.pending.length} pendiente(s)${disabled}`
+  const nextImages = queue.pending
+    .slice(0, QUEUE_PREVIEW_SIZE)
+    .map((image, index) => `  ${index + 1}. ${image.name}${image.tikTokMessageId ? AWAITING_APPROVAL_SUFFIX : ''}`)
+
+  return [header, ...nextImages]
+}
+
+export function formatQueueStatus(queues: RouteQueue[]): string {
+  if (queues.every((queue) => queue.pending.length === 0)) {
+    return 'Las colas estan vacias: no hay imagenes pendientes en ninguna carpeta de Drive.'
+  }
+
+  return fitToDiscord(queues.flatMap(formatQueue).join(LINE_BREAK))
+}
+
+export function formatPublishResult(result: ApiResponse<PublishRunSummary>): string {
+  if (!result.success) {
+    return PUBLISH_ERROR_MESSAGE
+  }
+
+  const { published, proposed, failed, skipped, pendingCount } = result.data
+
+  if (pendingCount === 0) {
+    return 'No habia nada que publicar: la cola esta vacia.'
+  }
+
+  const lines = [
+    ...published.map((image) => `✅ Publicada (${image.route}): ${image.name}`),
+    ...proposed.map((file) => `📨 Enviada a aprobacion (${file.route}): ${file.name}`),
+    ...failed.map((image) => `❌ Fallo (${image.route}): ${image.name}: ${image.error}`),
+  ]
+
+  if (skipped > 0) {
+    lines.push(`⏳ ${skipped} imagen(es) quedaron para la proxima corrida por falta de tiempo.`)
+  }
+
+  return lines.length > 0 ? fitToDiscord(lines.join(LINE_BREAK)) : NOTHING_NEW_MESSAGE
+}

@@ -1,3 +1,4 @@
+import type { Readable } from 'node:stream'
 import type { drive_v3 } from 'googleapis'
 import { getDriveClient } from './client.js'
 import {
@@ -75,4 +76,22 @@ export async function downloadImageToMemory(fileId: string): Promise<DriveImage>
 
 export function toUploadBlob(image: DriveImage): Blob {
   return new Blob([new Uint8Array(image.buffer)], { type: image.mimeType })
+}
+
+export async function downloadByteRange(fileId: string, firstByte: number, lastByte: number): Promise<Uint8Array<ArrayBuffer>> {
+  const response = await getDriveClient().files.get(
+    { fileId, alt: DRIVE_MEDIA_ALT, supportsAllDrives: true },
+    { responseType: 'arraybuffer', headers: { Range: `bytes=${firstByte}-${lastByte}` } },
+  )
+
+  return new Uint8Array(response.data as ArrayBuffer)
+}
+
+export async function downloadStream(fileId: string): Promise<Readable> {
+  const response = await getDriveClient().files.get(
+    { fileId, alt: DRIVE_MEDIA_ALT, supportsAllDrives: true },
+    { responseType: 'stream' },
+  )
+
+  return response.data as Readable
 }

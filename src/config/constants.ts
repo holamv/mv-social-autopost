@@ -4,14 +4,17 @@ export const DRIVE_PAGE_SIZE = 200
 export const DRIVE_MAX_PAGES = 10
 export const DRIVE_PAGE_TOKEN_FIELD = 'nextPageToken'
 export const DRIVE_FILE_COLLECTION = 'files'
-export const DRIVE_FILE_PROPERTIES = ['id', 'name', 'mimeType', 'description', 'appProperties']
+export const DRIVE_FILE_PROPERTIES = ['id', 'name', 'mimeType', 'size', 'description', 'webViewLink', 'appProperties']
 export const FIELD_SEPARATOR = ', '
 export const DRIVE_DOWNLOAD_PROPERTIES = ['id', 'name', 'mimeType', 'size']
 export const DRIVE_MOVE_PROPERTIES = ['id', 'parents']
 export const DRIVE_PARENTS_FIELD = 'parents'
 export const PARENT_SEPARATOR = ','
 export const DRIVE_MEDIA_ALT = 'media'
+export const DRIVE_FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder'
+export const DRIVE_FOLDER_LOOKUP_FIELDS = 'files(id, name)'
 export const IMAGE_MIME_PREFIX = 'image/'
+export const VIDEO_MIME_PREFIX = 'video/'
 export const ESCAPED_PRIVATE_KEY_NEWLINE = /\\n/g
 export const REAL_NEWLINE = '\n'
 
@@ -21,9 +24,29 @@ export const PUBLISHED_AT_KEY = 'mvPublishedAt'
 export const LOCKED_AT_KEY = 'mvLockedAt'
 export const FACEBOOK_POST_ID_KEY = 'mvFacebookPostId'
 export const INSTAGRAM_MEDIA_ID_KEY = 'mvInstagramMediaId'
+export const LINKEDIN_POST_ID_KEY = 'mvLinkedInPostId'
+export const LINKEDIN_MEDIA_URN_KEY = 'mvLinkedInMediaUrn'
+export const TIKTOK_PUBLISH_ID_KEY = 'mvTikTokPublishId'
+export const TIKTOK_MESSAGE_ID_KEY = 'mvTikTokMessageId'
+export const YOUTUBE_VIDEO_ID_KEY = 'mvYouTubeVideoId'
+export const CHANNEL_POST_ID_KEYS = {
+  facebook: FACEBOOK_POST_ID_KEY,
+  instagram: INSTAGRAM_MEDIA_ID_KEY,
+  linkedin: LINKEDIN_POST_ID_KEY,
+  tiktok: TIKTOK_PUBLISH_ID_KEY,
+  youtube: YOUTUBE_VIDEO_ID_KEY,
+} as const
+
+export const ROOT_ROUTE_LABEL = 'Carpeta principal'
+export const FACEBOOK_FOLDER_NAME = 'Facebook'
+export const INSTAGRAM_FOLDER_NAME = 'Instagram'
+export const LINKEDIN_FOLDER_NAME = 'LinkedIn'
+export const TIKTOK_FOLDER_NAME = 'TikTok'
+export const YOUTUBE_FOLDER_NAME = 'YouTube'
 
 export const BYTES_PER_MEGABYTE = 1048576
 export const MAX_IMAGE_MEGABYTES = 25
+export const MAX_VIDEO_MEGABYTES = 200
 
 export const FUNCTION_MAX_DURATION_SECONDS = 120
 export const DEADLINE_SAFETY_SECONDS = 20

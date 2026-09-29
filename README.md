@@ -40,6 +40,28 @@ GET /api/cron/publish          ← protegido con CRON_SECRET
               mueve el archivo a la carpeta de publicadas
 ```
 
+### Carpetas por red
+
+Dentro de la carpeta de origen se puede elegir en que red sale cada archivo:
+
+```
+Carpeta de origen
+├── foto-suelta.jpg   → Facebook + Instagram
+├── Facebook/         → solo Facebook (imagenes)
+├── Instagram/        → solo Instagram (imagenes)
+├── LinkedIn/         → solo LinkedIn (imagenes y videos MP4)
+├── TikTok/           → TikTok con aprobacion en Discord (videos MP4)
+└── YouTube/          → YouTube Shorts (videos verticales)
+```
+
+- Los nombres de las subcarpetas son exactos: `Facebook`, `Instagram`, `LinkedIn`, `TikTok` y `YouTube`. Si una no
+  existe, esa cola simplemente no se procesa.
+- Cada corrida publica hasta `BATCH_SIZE` archivos **por cola**, en orden numerico.
+- Con `MARK_STRATEGY='move'`, lo publicado se mueve a `Publicados/` (sueltas) o a
+  `Publicados/Facebook/` y `Publicados/Instagram/`. Esas subcarpetas se crean a mano
+  en Drive: si faltan, el archivo queda marcado como publicado pero no se mueve.
+- `/estado` en Discord muestra cada cola por separado.
+
 ### Por que cada red se publica distinto
 
 **Facebook acepta el archivo directo.** La imagen se descarga de Drive a memoria y
@@ -75,11 +97,14 @@ mira la carpeta, no ensucian el nombre ni el contenido del archivo.
 api/
   cron/publish.ts        Funcion que dispara el cron
   media.ts               Sirve la imagen firmada a Instagram
+  metrics.ts             Likes, vistas y comentarios de lo publicado (para el plan de contenidos)
+  discord/interactions.ts  Comandos del bot de Discord
 src/
   config/constants.ts    Todos los valores fijos
   config/env.ts          Validacion de variables de entorno con Zod
   core/deadline.ts       Presupuesto de tiempo de la ejecucion
   core/pipeline.ts       Orquestacion del ciclo completo
+  discord/               Firma, comandos y respuestas del bot
   drive/client.ts        Cliente autenticado de Google Drive
   drive/download.ts      Descarga a memoria y Blob para subida binaria
   drive/listPending.ts   Consulta y filtro de pendientes
@@ -90,8 +115,12 @@ src/
   meta/client.ts         Cliente HTTP del Graph API
   meta/facebook.ts       Publicacion en la pagina por binario
   meta/instagram.ts      Contenedor + espera + publicacion
+scripts/
+  registerDiscordCommands.ts  Registra /estado y /publicar-ahora
 vercel.json              Cron y limites de ejecucion
 ```
+
+El bot de Discord se configura aparte: ver [docs/DISCORD_BOT.md](docs/DISCORD_BOT.md).
 
 ---
 
@@ -163,6 +192,88 @@ Pasos:
 7. Mientras la app este en modo desarrollo solo funciona con cuentas que figuren
    como administradoras. Para uso real hay que pasarla a **modo Live** y completar
    la **verificacion del negocio**.
+
+## 2b. Configurar LinkedIn (opcional)
+
+Publica en la pagina de empresa de Manzana Verde. Sin estas variables la carpeta
+`LinkedIn/` se ignora y `/estado` lo avisa.
+
+1. En [linkedin.com/developers](https://www.linkedin.com/developers/apps) crear una app
+   asociada a la pagina de MV y verificarla desde la pagina.
+2. En **Products**, pedir **Community Management API**. LinkedIn revisa la solicitud
+   (puede tardar dias o semanas).
+3. Una persona con rol **ADMINISTRATOR** o **CONTENT_ADMIN** de la pagina autoriza la app
+   con el scope `w_organization_social` y se guarda el access token (dura 60 dias).
+4. `LINKEDIN_ORGANIZATION_ID` es el numero de la URL de administracion de la pagina
+   (`linkedin.com/company/<numero>/admin`).
+5. Para no renovar a mano cada 60 dias: si LinkedIn aprueba tokens de renovacion para
+   la app, cargar `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` y `LINKEDIN_REFRESH_TOKEN`
+   (dura 1 año) y el servicio pide un access token nuevo solo.
+
+Limites: imagenes JPG, PNG o GIF; videos MP4 de hasta `MAX_VIDEO_MEGABYTES` (200 MB)
+y de 3 s a 30 min. Un video se sube por partes de 4 MB directo desde Drive, sin
+cargarlo entero en memoria. Si LinkedIn sigue procesandolo al final de la corrida,
+el ID del video queda guardado y la corrida siguiente publica sin volver a subirlo.
+
+## 2c. Configurar TikTok (opcional)
+
+TikTok exige que una persona confirme cada publicacion, asi que el cron no publica
+solo: manda cada video a un canal de Discord para aprobarlo (ver `docs/DISCORD_BOT.md`).
+
+1. En [developers.tiktok.com](https://developers.tiktok.com) crear la app, agregar
+   **Login Kit**, **Content Posting API** y **Display API**, con los scopes
+   `user.info.basic`, `video.publish`, `video.upload` y `video.list` (este ultimo es para
+   leer las metricas; si falta en la app, TikTok rechaza toda la conexion).
+2. Redirect URI: `https://<dominio-de-produccion>/api/tiktok/callback`.
+3. En Vercel → **Storage**, crear una base **Upstash Redis** y conectarla al proyecto:
+   agrega `KV_REST_API_URL` y `KV_REST_API_TOKEN`. Ahi se guarda el token de TikTok, que
+   dura 24 h y se renueva solo; el de renovacion cambia en cada uso, por eso no puede
+   vivir en una variable de entorno.
+4. Cargar `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `DISCORD_BOT_TOKEN` y
+   `DISCORD_TIKTOK_CHANNEL_ID`, redeployar y registrar comandos (`npm run discord:register`).
+5. En Discord, `/conectar-tiktok` → abrir el enlace con la cuenta de TikTok de MV.
+
+Mientras TikTok no audite la app, todo lo que se publica queda en **Solo yo** y hay un
+limite de 5 cuentas por dia. Para la auditoria hay que mostrar el flujo de aprobacion.
+Videos MP4 de hasta 200 MB: hasta 64 MB se suben en una parte, mas grandes en partes
+de 10 MB leidas de Drive con `Range`.
+
+## 2d. Configurar YouTube Shorts (opcional)
+
+Sube solo cada video de `YouTube/` al canal de MV. YouTube decide que es un Short si
+el video es vertical y dura hasta 3 minutos; ademas se agrega `#Shorts` a la
+descripcion. Titulo: primera linea de la descripcion del archivo en Drive (o el nombre
+del archivo), hasta 100 caracteres.
+
+1. En Google Cloud, en el mismo proyecto de la cuenta de servicio: **APIs y servicios →
+   Biblioteca → YouTube Data API v3 → Habilitar**.
+2. **Pantalla de consentimiento de OAuth**: tipo **Externo**, y en estado de publicacion
+   **En produccion** (en "Prueba" los tokens vencen a los 7 dias). Google mostrara un
+   aviso de "app no verificada" al conectar: se acepta con "Avanzado → Ir a...".
+3. **Credenciales → Crear credenciales → ID de cliente de OAuth → Aplicacion web**, con
+   URI de redireccion `https://<dominio-de-produccion>/api/youtube/callback`.
+4. Cargar `YOUTUBE_CLIENT_ID` y `YOUTUBE_CLIENT_SECRET` en Vercel y redeployar.
+5. En Discord, `/conectar-youtube` → abrir el enlace con la cuenta de Google que
+   administra el canal.
+
+Mientras Google no audite el proyecto (formulario "YouTube API Services - Audit and
+Quota Extension"), los videos subidos por API quedan **privados**; se pueden pasar a
+publicos a mano en YouTube Studio. Cada subida gasta 1 unidad de la cuota de subidas.
+
+## 2e. Metricas para el plan de contenidos (opcional)
+
+`GET /api/metrics` devuelve likes, vistas, comentarios y compartidos de las ultimas
+publicaciones de Facebook, Instagram, YouTube y TikTok, con las mismas credenciales que
+usa el autopost. Lo consulta cada 15 minutos el robot del repo `mv-plan-contenidos` para
+armar el panel de contenido viral.
+
+1. Generar un token (`openssl rand -hex 32`) y cargarlo como `METRICS_API_TOKEN` en Vercel.
+2. Redeployar.
+3. Probar: `curl -H "Authorization: Bearer <token>" https://<dominio>/api/metrics`.
+
+Si una red falla (por ejemplo TikTok sin el scope `video.list`), las demas se devuelven
+igual y el error queda en `data.failures`. Sin `METRICS_API_TOKEN` el endpoint responde
+503 y no lee nada.
 
 ## 3. Variables de entorno
 

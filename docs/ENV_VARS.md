@@ -15,10 +15,10 @@ Vercel en **Logs** filtrando por `[Env]`:
 | `code` | Que significa |
 |---|---|
 | `invalid_type` | La variable no existe en ese entorno |
-| `invalid_string` | Existe pero el formato es incorrecto (URL o email) |
+| `invalid_string` | Existe pero el formato es incorrecto (URL, email o ID de carpeta con restos de URL como `?hl=`) |
 | `too_small` | Existe pero esta vacia |
 | `invalid_enum_value` | Valor fuera de la lista permitida (p. ej. `MARK_STRATEGY` distinto de `properties` o `move`) |
-| `custom` | Regla cruzada, p. ej. `MARK_STRATEGY=move` sin `DRIVE_PUBLISHED_FOLDER_ID` |
+| `custom` | Regla propia: `GOOGLE_PRIVATE_KEY` que no se puede leer como PEM, `SCHEDULE_TIMEZONE` invalida o `MARK_STRATEGY=move` sin `DRIVE_PUBLISHED_FOLDER_ID` |
 
 ## Credenciales de Google Drive
 
@@ -27,14 +27,17 @@ Vercel en **Logs** filtrando por `[Env]`:
 | `GOOGLE_CLIENT_EMAIL` | si | Campo `client_email` del JSON de la cuenta de servicio |
 | `GOOGLE_PRIVATE_KEY` | si | Campo `private_key` del mismo JSON, con los `-----BEGIN PRIVATE KEY-----` incluidos |
 
-`GOOGLE_PRIVATE_KEY` tiene saltos de linea. En Vercel se pega completa tal cual. Si
-el valor queda con `\n` escapados, el codigo los convierte solo.
+`GOOGLE_PRIVATE_KEY` tiene saltos de linea. En Vercel se pega completa tal cual. El
+codigo tolera los errores comunes al pegarla: `\n` escapados, comillas alrededor,
+espacios sobrantes, o el JSON entero de la cuenta de servicio (toma `private_key`).
+Si aun asi no es una clave legible, la funcion falla al arrancar nombrando
+`GOOGLE_PRIVATE_KEY`, y el bot de Discord lo dice en su respuesta.
 
 ## IDs de carpetas de Drive
 
 | Variable | Obligatoria | De donde sale |
 |---|---|---|
-| `DRIVE_SOURCE_FOLDER_ID` | si | Lo que aparece en la URL despues de `/folders/` |
+| `DRIVE_SOURCE_FOLDER_ID` | si | Lo que aparece en la URL despues de `/folders/` y antes de cualquier `?` (sin `?hl=es-419`) |
 | `DRIVE_PUBLISHED_FOLDER_ID` | solo si `MARK_STRATEGY='move'` | Igual, en la carpeta "Publicados" |
 | `MARK_STRATEGY` | no, default `properties` | `properties` marca y deja el archivo; `move` ademas lo mueve |
 
@@ -55,6 +58,7 @@ Ambas carpetas deben estar compartidas con `GOOGLE_CLIENT_EMAIL` con rol **Edito
 | `PUBLIC_BASE_URL` | si | URL de produccion del proyecto, sin barra final |
 | `MEDIA_SIGNING_SECRET` | si | Generar con `openssl rand -hex 32` |
 | `CRON_SECRET` | si | Generar con `openssl rand -hex 32` |
+| `METRICS_API_TOKEN` | no | Generar con `openssl rand -hex 32`. Enciende `GET /api/metrics`; el mismo valor va como secret `AUTOPOST_METRICS_TOKEN` en el repo `mv-plan-contenidos` |
 
 `CRON_SECRET` es el unico que Vercel usa por su cuenta: lo manda como
 `Authorization: Bearer ...` al disparar el cron. Sin el, el endpoint queda abierto.
@@ -69,6 +73,61 @@ necesita alcanzar `/api/media`.
 |---|---|---|---|
 | `BATCH_SIZE` | no | `1` | Imagenes por ejecucion |
 | `DEFAULT_CAPTION` | no | vacio | Texto a usar cuando el archivo no tiene descripcion en Drive |
+| `SCHEDULE_TIMEZONE` | no | `America/Lima` | Zona horaria de los horarios de `/horario` (formato IANA, ej. `America/Bogota`) |
+
+## LinkedIn
+
+Opcionales. Sin `LINKEDIN_ORGANIZATION_ID` y un token, la carpeta `LinkedIn/` no se
+publica. Ver README, seccion 2b.
+
+| Variable | Obligatoria | De donde sale |
+|---|---|---|
+| `LINKEDIN_ORGANIZATION_ID` | para LinkedIn | Numero en `linkedin.com/company/<numero>/admin` |
+| `LINKEDIN_ACCESS_TOKEN` | para LinkedIn, salvo que haya refresh | Token con `w_organization_social` de un admin de la pagina (60 dias) |
+| `LINKEDIN_CLIENT_ID` | no | App de LinkedIn → Auth |
+| `LINKEDIN_CLIENT_SECRET` | no | App de LinkedIn → Auth |
+| `LINKEDIN_REFRESH_TOKEN` | no | Solo si LinkedIn aprobo refresh tokens para la app (1 año) |
+| `LINKEDIN_API_VERSION` | no, default `202609` | Version `YYYYMM` de la API. LinkedIn retira cada version al año |
+
+## YouTube
+
+Opcionales. Sin ellas la carpeta `YouTube/` no se procesa y `/estado` lo dice.
+
+| Variable | Obligatoria | Default | De donde sale |
+|---|---|---|---|
+| `YOUTUBE_CLIENT_ID` | para YouTube | — | Google Cloud → Credenciales → ID de cliente OAuth (web) |
+| `YOUTUBE_CLIENT_SECRET` | para YouTube | — | Misma pantalla. Secreto |
+| `YOUTUBE_PRIVACY` | no | `public` | `public`, `unlisted` o `private`. Sin auditoria, Google fuerza `private` |
+| `YOUTUBE_CATEGORY_ID` | no | `26` | Categoria del video (26 = Consejos y estilo) |
+
+El token del canal no va en Vercel: se guarda en Redis al usar `/conectar-youtube`.
+
+## TikTok
+
+Opcionales. Si falta cualquiera, la carpeta `TikTok/` no se procesa y `/estado` dice cual.
+
+| Variable | De donde sale |
+|---|---|
+| `TIKTOK_CLIENT_KEY` | developers.tiktok.com → la app → Client key |
+| `TIKTOK_CLIENT_SECRET` | Misma pantalla, Client secret. Secreto |
+| `KV_REST_API_URL` | Vercel → Storage → Upstash Redis (se carga sola al conectar la base) |
+| `KV_REST_API_TOKEN` | Idem. Guarda el token de TikTok, que cambia en cada renovacion |
+| `DISCORD_BOT_TOKEN` | Ver seccion del bot. Hace falta para mandar los mensajes de aprobacion |
+| `DISCORD_TIKTOK_CHANNEL_ID` | ID del canal de Discord donde se aprueba cada video |
+
+## Bot de Discord
+
+Opcionales: si faltan, el cron sigue funcionando y solo `/api/discord/interactions`
+responde 500. Ver [DISCORD_BOT.md](DISCORD_BOT.md).
+
+| Variable | Donde va | De donde sale |
+|---|---|---|
+| `DISCORD_APPLICATION_ID` | Vercel | Portal de Discord → General Information |
+| `DISCORD_PUBLIC_KEY` | Vercel | Portal de Discord → General Information |
+| `DISCORD_PUBLISHER_IDS` | Vercel, opcional | IDs de usuario o rol de Discord que pueden usar `/publicar-ahora`, separados por coma. Los administradores siempre pueden |
+| `DISCORD_BOT_TOKEN` | Tu maquina para `npm run discord:register`; Vercel si se usa TikTok | Portal de Discord → Bot → Reset Token |
+| `DISCORD_TIKTOK_CHANNEL_ID` | Vercel, para TikTok | Clic derecho sobre el canal de aprobacion → Copiar ID del canal |
+| `DISCORD_GUILD_ID` | Solo tu maquina | ID del servidor de MV: `619991595613290496` |
 
 ## Checklist antes del primer deploy
 

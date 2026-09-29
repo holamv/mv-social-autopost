@@ -1,8 +1,8 @@
 # PROJECT_SCOPE - mv-social-autopost
 
-**Version:** 1.0.1
+**Version:** 1.3.1
 **Estado:** base funcional, sin desplegar
-**Ultima actualizacion:** 2026-09-23
+**Ultima actualizacion:** 2026-09-29
 
 ## Objetivo
 
@@ -18,6 +18,7 @@ Dentro del alcance:
 - Publicacion de imagen unica con texto en Facebook e Instagram.
 - Marcado idempotente en Drive (`appProperties`) y movimiento opcional de carpeta.
 - Disparo por Vercel Cron Job con secreto compartido.
+- Bot de Discord con `/estado` y `/publicar-ahora` (ver `docs/DISCORD_BOT.md`).
 
 Fuera del alcance por ahora:
 - Carruseles, Reels, Stories y video.
@@ -32,6 +33,13 @@ Fuera del alcance por ahora:
 | Autenticacion con Google Drive (cuenta de servicio) | done |
 | Descarga de imagen a memoria con validacion y tope de peso | done |
 | Listado de pendientes con orden numerico | done |
+| Subcarpetas por red (`Facebook/`, `Instagram/`) con `Publicados/<red>` | done |
+| Videos en Facebook e Instagram (Reels) | pendiente (fase 2) |
+| LinkedIn (imagenes y videos) | done (falta aprobacion de LinkedIn y token) |
+| TikTok con aprobacion en Discord (`/conectar-tiktok`, menu de privacidad, boton publicar) | done (falta app de TikTok y Redis) |
+| `/publicar-ahora` por red y `/horario` por carpeta (Redis, zona `SCHEDULE_TIMEZONE`) | done |
+| YouTube Shorts (`YouTube/`, subida en streaming desde Drive, `/conectar-youtube`) | done (falta cliente OAuth y conectar el canal) |
+| Endpoint `GET /api/metrics` para el panel viral del plan de contenidos (FB, IG, YouTube, TikTok) | done (falta `METRICS_API_TOKEN` y reconectar TikTok con `video.list`) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
 | Publicacion en Facebook por subida binaria directa | done |
@@ -41,8 +49,12 @@ Fuera del alcance por ahora:
 | Vercel Cron Job configurado (cada hora) | done |
 | Corte por tiempo antes del limite de Vercel | done |
 | Validacion de variables de entorno con Zod | done |
-| Log de variables de entorno invalidas (sin valores) | done |
-| Tests unitarios (ordering, signedUrl, pipeline) | pendiente |
+| Tolerancia de formato en `GOOGLE_PRIVATE_KEY` y validacion de IDs de carpeta | done |
+| Bot informa en Discord que variable esta mal configurada | done |
+| `/publicar-ahora` habilitado por lista de usuarios o roles (`DISCORD_PUBLISHER_IDS`) | done |
+| Bot de Discord: `/estado` y `/publicar-ahora` por HTTP interactions | done (falta crear la app y agregarla al servidor) |
+| Log de variables de entorno invalidas en Vercel (sin valores) | done |
+| Tests unitarios (ordering, signedUrl, pipeline, discord) | pendiente |
 | Alertas a Discord cuando una publicacion falla | pendiente |
 | Soporte de carrusel y video | pendiente |
 
@@ -51,12 +63,55 @@ Fuera del alcance por ahora:
 ```
 api/cron/publish.ts        Handler del cron
 api/media.ts               Handler de la imagen firmada
+api/metrics.ts             Metricas de lo publicado, protegido con METRICS_API_TOKEN
+src/metrics/collect.ts     Lee las cuatro redes y junta los resultados
+src/metrics/meta.ts        Posts de la pagina y media de Instagram con insights
+src/metrics/youtube.ts     Subidas del canal conectado y sus estadisticas
+src/metrics/tiktok.ts      Videos de la cuenta conectada (video.list)
+src/metrics/numbers.ts     Conversion de conteos y fechas
+src/metrics/types.ts       Contrato de la respuesta
+api/discord/interactions.ts  Endpoint de comandos de Discord
 src/config/constants.ts    Valores fijos
 src/config/env.ts          Schema Zod de entorno
+src/config/privateKey.ts   Normalizacion y validacion de la clave de Google
 src/core/deadline.ts       Presupuesto de tiempo
-src/core/pipeline.ts       Orquestacion del ciclo
+src/core/pipeline.ts       Orquestacion del ciclo por cola
+src/core/publishers.ts     Publicador de cada red
+src/core/routes.ts         Carpeta principal y subcarpetas por red
+src/core/schedule.ts       Horarios por carpeta, hora local y parseo
+src/discord/scheduleCommand.ts  Comando /horario y lectura de opciones
+src/discord/access.ts      Quien puede usar /publicar-ahora
+src/discord/api.ts         Edicion de la respuesta diferida
+src/discord/commandDefinitions.ts  Nombres y definiciones de comandos
+src/discord/commands.ts    Ejecucion de cada comando
+src/discord/constants.ts   Valores fijos de Discord
+src/discord/env.ts         Schema Zod de entorno de Discord
+src/discord/messages.ts    Textos de respuesta
+src/discord/verify.ts      Verificacion de firma Ed25519
 src/drive/client.ts        Cliente autenticado de Drive
 src/drive/download.ts      Descarga de imagenes a memoria
+src/drive/folders.ts       Busqueda de subcarpetas por nombre
+src/linkedin/client.ts     Token, encabezados versionados y renovacion
+src/tiktok/api.ts          Llamadas a la API y consulta de la cuenta
+src/youtube/auth.ts        OAuth de Google y refresh token en Redis
+src/youtube/publish.ts     Titulo, descripcion y subida del Short
+src/lib/oauthState.ts      Estado firmado por red para enlaces de autorizacion
+src/lib/callbackPage.ts    Pagina de respuesta de los callbacks OAuth
+src/discord/connectCommands.ts  /conectar-tiktok y /conectar-youtube
+api/youtube/callback.ts    Retorno de la autorizacion de Google
+src/tiktok/approval.ts     Publicacion al aprobar desde Discord
+src/tiktok/proposal.ts     Mensaje de aprobacion con menu y boton
+src/tiktok/publish.ts      Init, subida y espera del estado
+src/tiktok/tokens.ts       OAuth y renovacion con token rotativo
+src/tiktok/upload.ts       Division en partes y subida con Content-Range
+src/lib/kv.ts              Cliente REST de Upstash Redis
+src/discord/botApi.ts      Mensajes al canal con el token del bot
+src/discord/components.ts  Menus y botones de Discord
+src/discord/tiktokComponents.ts  Respuesta al menu y al boton de TikTok
+api/tiktok/callback.ts     Retorno de la autorizacion de TikTok
+src/linkedin/media.ts      Subida de imagenes y videos por partes
+src/linkedin/posts.ts      Creacion del post y escape de texto
+src/linkedin/publish.ts    Flujo completo con reanudacion de videos
 src/drive/listPending.ts   Consulta y filtros
 src/drive/marking.ts       Lock y marcado de estado
 src/drive/move.ts          Movimiento entre carpetas
@@ -66,6 +121,7 @@ src/meta/client.ts         Cliente Graph API
 src/meta/facebook.ts       Publicacion en pagina
 src/meta/instagram.ts      Publicacion en Instagram
 src/types.ts               Contratos compartidos
+scripts/registerDiscordCommands.ts  Registro de comandos en el servidor
 vercel.json                Cron y limites
 ```
 
@@ -74,7 +130,13 @@ vercel.json                Cron y limites
 | API | Uso |
 |---|---|
 | Google Drive API v3 | `files.list`, `files.get` (metadatos y binario), `files.update` |
-| Meta Graph API v21.0 | `/{page}/photos`, `/{ig-user}/media`, `/{ig-user}/media_publish` |
+| Discord API v10 | `PUT /applications/{app}/guilds/{guild}/commands`, `PATCH /webhooks/{app}/{token}/messages/@original` |
+| LinkedIn REST API (202609) | `/rest/images`, `/rest/videos` (initialize, finalize, estado), `/rest/posts` |
+| TikTok Content Posting API v2 | `oauth/token`, `post/publish/creator_info/query`, `post/publish/video/init`, `post/publish/status/fetch` |
+| TikTok Display API v2 | `video/list` (metricas) |
+| YouTube Data API v3 (lectura) | `channels.list`, `playlistItems.list`, `videos.list` (metricas) |
+| Upstash Redis REST | `GET` / `SET` del token de TikTok |
+| Meta Graph API v21.0 | `/{page}/photos`, `/{ig-user}/media`, `/{ig-user}/media_publish`, `/{page}/posts` e insights (metricas) |
 
 ## Decisiones tecnicas
 
@@ -102,3 +164,27 @@ vercel.json                Cron y limites
   `MAX_IMAGE_MEGABYTES` protege la memoria de la funcion.
 - **`mvFacebookPostId` guardado antes de Instagram:** si Instagram falla, el
   reintento no duplica el post de Facebook.
+- **Discord por HTTP interactions, no por gateway:** un bot con gateway necesita un
+  proceso siempre encendido, que Vercel no tiene. Con el Interactions Endpoint cada
+  comando es una peticion firmada; se responde diferido antes de los 3 s y el trabajo
+  sigue con `waitUntil`. El token del bot solo se usa para registrar comandos, desde
+  local, y nunca se carga en Vercel.
+- **Rutas por subcarpeta:** cada carpeta es una cola con sus redes. Cada red guarda
+  su propio ID de publicacion en `appProperties`, asi un reintento solo publica en
+  la red que falto. Las subcarpetas de `Publicados` no se crean solas porque una
+  cuenta de servicio no puede ser duena de archivos en un Drive personal.
+- **LinkedIn, videos por partes desde Drive:** cada parte de 4 MB se baja de Drive
+  con `Range` y se sube directo, asi un video grande no ocupa la memoria de la
+  funcion. El URN del video se guarda apenas termina la subida para no repetirla si
+  LinkedIn todavia lo esta procesando.
+- **TikTok con aprobacion humana:** las reglas de TikTok prohiben publicar sin que una
+  persona vea el contenido, elija la privacidad y confirme. El cron propone y el boton
+  de Discord publica. La privacidad elegida vive en el propio mensaje (el menu), asi el
+  boton no depende de otra lectura. El token de TikTok rota en cada renovacion y por eso
+  se guarda en Redis, no en variables de entorno.
+- **Horarios fail-closed:** si Redis no responde, el cron no publica esa hora. Es
+  preferible saltar una corrida a publicar fuera del horario pactado con marketing.
+- **YouTube por streaming:** el video pasa de Drive a `videos.insert` como stream, sin
+  cargarlo en memoria; la libreria `googleapis` renueva el access token con el refresh
+  token guardado en Redis. Una cuenta de servicio no puede subir a un canal, por eso se
+  autoriza con la cuenta de Google del canal via `/conectar-youtube`.
