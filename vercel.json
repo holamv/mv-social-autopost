@@ -19,6 +19,10 @@
     "api/discord/interactions.ts": {
       "maxDuration": 120,
       "memory": 1024
+    },
+    "api/metrics.ts": {
+      "maxDuration": 60,
+      "memory": 1024
     }
   }
 }

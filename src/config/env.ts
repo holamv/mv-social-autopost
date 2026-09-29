@@ -48,6 +48,7 @@ const envSchema = z
     PUBLIC_BASE_URL: z.string().url(),
     MEDIA_SIGNING_SECRET: z.string().min(1),
     CRON_SECRET: z.string().min(1),
+    METRICS_API_TOKEN: optionalSecret,
     BATCH_SIZE: z.coerce.number().int().positive().default(DEFAULT_BATCH_SIZE),
     DEFAULT_CAPTION: z.string().default(''),
     LINKEDIN_ORGANIZATION_ID: z.string().trim().regex(LINKEDIN_ORGANIZATION_PATTERN).optional(),

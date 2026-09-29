@@ -1,8 +1,8 @@
 # PROJECT_SCOPE - mv-social-autopost
 
-**Version:** 1.2.0
+**Version:** 1.3.0
 **Estado:** base funcional, sin desplegar
-**Ultima actualizacion:** 2026-09-24
+**Ultima actualizacion:** 2026-09-29
 
 ## Objetivo
 
@@ -39,6 +39,7 @@ Fuera del alcance por ahora:
 | TikTok con aprobacion en Discord (`/conectar-tiktok`, menu de privacidad, boton publicar) | done (falta app de TikTok y Redis) |
 | `/publicar-ahora` por red y `/horario` por carpeta (Redis, zona `SCHEDULE_TIMEZONE`) | done |
 | YouTube Shorts (`YouTube/`, subida en streaming desde Drive, `/conectar-youtube`) | done (falta cliente OAuth y conectar el canal) |
+| Endpoint `GET /api/metrics` para el panel viral del plan de contenidos (FB, IG, YouTube, TikTok) | done (falta `METRICS_API_TOKEN` y reconectar TikTok con `video.list`) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
 | Publicacion en Facebook por subida binaria directa | done |
@@ -61,6 +62,13 @@ Fuera del alcance por ahora:
 ```
 api/cron/publish.ts        Handler del cron
 api/media.ts               Handler de la imagen firmada
+api/metrics.ts             Metricas de lo publicado, protegido con METRICS_API_TOKEN
+src/metrics/collect.ts     Lee las cuatro redes y junta los resultados
+src/metrics/meta.ts        Posts de la pagina y media de Instagram con insights
+src/metrics/youtube.ts     Subidas del canal conectado y sus estadisticas
+src/metrics/tiktok.ts      Videos de la cuenta conectada (video.list)
+src/metrics/numbers.ts     Conversion de conteos y fechas
+src/metrics/types.ts       Contrato de la respuesta
 api/discord/interactions.ts  Endpoint de comandos de Discord
 src/config/constants.ts    Valores fijos
 src/config/env.ts          Schema Zod de entorno
@@ -124,8 +132,10 @@ vercel.json                Cron y limites
 | Discord API v10 | `PUT /applications/{app}/guilds/{guild}/commands`, `PATCH /webhooks/{app}/{token}/messages/@original` |
 | LinkedIn REST API (202609) | `/rest/images`, `/rest/videos` (initialize, finalize, estado), `/rest/posts` |
 | TikTok Content Posting API v2 | `oauth/token`, `post/publish/creator_info/query`, `post/publish/video/init`, `post/publish/status/fetch` |
+| TikTok Display API v2 | `video/list` (metricas) |
+| YouTube Data API v3 (lectura) | `channels.list`, `playlistItems.list`, `videos.list` (metricas) |
 | Upstash Redis REST | `GET` / `SET` del token de TikTok |
-| Meta Graph API v21.0 | `/{page}/photos`, `/{ig-user}/media`, `/{ig-user}/media_publish` |
+| Meta Graph API v21.0 | `/{page}/photos`, `/{ig-user}/media`, `/{ig-user}/media_publish`, `/{page}/posts` e insights (metricas) |
 
 ## Decisiones tecnicas
 
