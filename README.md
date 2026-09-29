@@ -97,6 +97,7 @@ mira la carpeta, no ensucian el nombre ni el contenido del archivo.
 api/
   cron/publish.ts        Funcion que dispara el cron
   media.ts               Sirve la imagen firmada a Instagram
+  metrics.ts             Likes, vistas y comentarios de lo publicado (para el plan de contenidos)
   discord/interactions.ts  Comandos del bot de Discord
 src/
   config/constants.ts    Todos los valores fijos
@@ -220,8 +221,9 @@ TikTok exige que una persona confirme cada publicacion, asi que el cron no publi
 solo: manda cada video a un canal de Discord para aprobarlo (ver `docs/DISCORD_BOT.md`).
 
 1. En [developers.tiktok.com](https://developers.tiktok.com) crear la app, agregar
-   **Login Kit** y **Content Posting API**, con los scopes `user.info.basic`,
-   `video.publish` y `video.upload`.
+   **Login Kit**, **Content Posting API** y **Display API**, con los scopes
+   `user.info.basic`, `video.publish`, `video.upload` y `video.list` (este ultimo es para
+   leer las metricas; si falta en la app, TikTok rechaza toda la conexion).
 2. Redirect URI: `https://<dominio-de-produccion>/api/tiktok/callback`.
 3. En Vercel → **Storage**, crear una base **Upstash Redis** y conectarla al proyecto:
    agrega `KV_REST_API_URL` y `KV_REST_API_TOKEN`. Ahi se guarda el token de TikTok, que
@@ -257,6 +259,21 @@ del archivo), hasta 100 caracteres.
 Mientras Google no audite el proyecto (formulario "YouTube API Services - Audit and
 Quota Extension"), los videos subidos por API quedan **privados**; se pueden pasar a
 publicos a mano en YouTube Studio. Cada subida gasta 1 unidad de la cuota de subidas.
+
+## 2e. Metricas para el plan de contenidos (opcional)
+
+`GET /api/metrics` devuelve likes, vistas, comentarios y compartidos de las ultimas
+publicaciones de Facebook, Instagram, YouTube y TikTok, con las mismas credenciales que
+usa el autopost. Lo consulta cada 15 minutos el robot del repo `mv-plan-contenidos` para
+armar el panel de contenido viral.
+
+1. Generar un token (`openssl rand -hex 32`) y cargarlo como `METRICS_API_TOKEN` en Vercel.
+2. Redeployar.
+3. Probar: `curl -H "Authorization: Bearer <token>" https://<dominio>/api/metrics`.
+
+Si una red falla (por ejemplo TikTok sin el scope `video.list`), las demas se devuelven
+igual y el error queda en `data.failures`. Sin `METRICS_API_TOKEN` el endpoint responde
+503 y no lee nada.
 
 ## 3. Variables de entorno
 

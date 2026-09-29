@@ -46,6 +46,7 @@ Ambas carpetas deben estar compartidas con `GOOGLE_CLIENT_EMAIL` con rol **Edito
 | `PUBLIC_BASE_URL` | si | URL de produccion del proyecto, sin barra final |
 | `MEDIA_SIGNING_SECRET` | si | Generar con `openssl rand -hex 32` |
 | `CRON_SECRET` | si | Generar con `openssl rand -hex 32` |
+| `METRICS_API_TOKEN` | no | Generar con `openssl rand -hex 32`. Enciende `GET /api/metrics`; el mismo valor va como secret `AUTOPOST_METRICS_TOKEN` en el repo `mv-plan-contenidos` |
 
 `CRON_SECRET` es el unico que Vercel usa por su cuenta: lo manda como
 `Authorization: Bearer ...` al disparar el cron. Sin el, el endpoint queda abierto.
