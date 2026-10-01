@@ -18,6 +18,8 @@ const YOUTUBE_PRIVACY_LEVELS = ['public', 'unlisted', 'private'] as const
 const YOUTUBE_CATEGORY_PATTERN = /^\d+$/
 const DEFAULT_YOUTUBE_CATEGORY_ID = '26'
 const TIMEZONE_MESSAGE = 'must be an IANA time zone like America/Lima'
+const HIGGSFIELD_MODEL_PATTERN = /^[a-z0-9.-]+(\/[a-z0-9.-]+)+$/
+const DEFAULT_HIGGSFIELD_VIDEO_MODEL = 'kling-video/v2.5-turbo/pro/text-to-video'
 
 function isValidTimeZone(timeZone: string): boolean {
   try {
@@ -68,6 +70,9 @@ const envSchema = z
     DISCORD_BOT_TOKEN: optionalSecret,
     DISCORD_TIKTOK_CHANNEL_ID: z.string().trim().regex(DISCORD_ID_PATTERN).optional(),
     LINKEDIN_API_VERSION: z.string().trim().regex(LINKEDIN_VERSION_PATTERN).default(DEFAULT_LINKEDIN_API_VERSION),
+    HF_API_KEY_ID: optionalSecret,
+    HF_API_KEY_SECRET: optionalSecret,
+    HF_VIDEO_MODEL: z.string().trim().regex(HIGGSFIELD_MODEL_PATTERN).default(DEFAULT_HIGGSFIELD_VIDEO_MODEL),
   })
   .superRefine((value, context) => {
     if (value.MARK_STRATEGY === MARK_STRATEGIES[1] && !value.DRIVE_PUBLISHED_FOLDER_ID) {
