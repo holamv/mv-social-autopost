@@ -7,6 +7,7 @@ import { editOriginalResponse } from './api.js'
 import {
   CONNECT_TIKTOK_COMMAND,
   CONNECT_YOUTUBE_COMMAND,
+  GENERATE_VIDEO_COMMAND,
   NETWORK_OPTION,
   PUBLISH_NOW_COMMAND,
   SCHEDULE_COMMAND,
@@ -15,6 +16,7 @@ import {
 import { handleScheduleCommand, readOption, toRouteKey, type OptionValue } from './scheduleCommand.js'
 import type { RouteKey } from '../types.js'
 import { connectAccount } from './connectCommands.js'
+import { handleGenerateCommand } from './generateCommand.js'
 import { getDiscordEnv } from './env.js'
 import {
   MESSAGE_FLAG_EPHEMERAL,
@@ -32,7 +34,9 @@ import {
 } from './messages.js'
 
 export interface CommandInteraction {
+  id: string
   token: string
+  channel_id?: string
   data: { name: string; options?: OptionValue[] }
   member?: InteractionMember
 }
@@ -97,6 +101,8 @@ export function handleCommand(interaction: CommandInteraction): InteractionRespo
       return connectAccount(interaction.member, 'youtube')
     case SCHEDULE_COMMAND:
       return handleScheduleCommand(interaction)
+    case GENERATE_VIDEO_COMMAND:
+      return handleGenerateCommand(interaction)
     default:
       return ephemeralReply(UNKNOWN_COMMAND_MESSAGE)
   }

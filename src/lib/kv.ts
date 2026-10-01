@@ -34,3 +34,15 @@ export async function kvGet(key: string): Promise<string | null> {
 export async function kvSet(key: string, value: string): Promise<void> {
   await runCommand(['SET', key, value])
 }
+
+export async function kvSetWithExpiry(key: string, value: string, ttlSeconds: number): Promise<void> {
+  await runCommand(['SET', key, value, 'EX', String(ttlSeconds)])
+}
+
+export async function kvSetIfAbsent(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+  return (await runCommand(['SET', key, value, 'NX', 'EX', String(ttlSeconds)])) !== null
+}
+
+export async function kvDelete(key: string): Promise<void> {
+  await runCommand(['DEL', key])
+}

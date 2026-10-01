@@ -1,8 +1,8 @@
 # PROJECT_SCOPE - mv-social-autopost
 
-**Version:** 1.3.1
+**Version:** 1.4.1
 **Estado:** base funcional, sin desplegar
-**Ultima actualizacion:** 2026-09-29
+**Ultima actualizacion:** 2026-10-01
 
 ## Objetivo
 
@@ -40,6 +40,7 @@ Fuera del alcance por ahora:
 | `/publicar-ahora` por red y `/horario` por carpeta (Redis, zona `SCHEDULE_TIMEZONE`) | done |
 | YouTube Shorts (`YouTube/`, subida en streaming desde Drive, `/conectar-youtube`) | done (falta cliente OAuth y conectar el canal) |
 | Endpoint `GET /api/metrics` para el panel viral del plan de contenidos (FB, IG, YouTube, TikTok) | done (falta `METRICS_API_TOKEN` y reconectar TikTok con `video.list`) |
+| `/generar-video`: video con Higgsfield que queda en `LinkedIn/`, `TikTok/` o `YouTube/` de Drive | 🚧 WIP (codigo listo; falta cargar variables en Vercel, registrar el comando y probar con un pedido real) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
 | Publicacion en Facebook por subida binaria directa | done |
@@ -121,6 +122,16 @@ src/meta/client.ts         Cliente Graph API
 src/meta/facebook.ts       Publicacion en pagina
 src/meta/instagram.ts      Publicacion en Instagram
 src/types.ts               Contratos compartidos
+api/higgsfield/webhook.ts  Aviso de Higgsfield cuando termina un video
+src/higgsfield/client.ts   Envio del pedido y consulta de estado
+src/higgsfield/jobs.ts     Pedidos pendientes y candado en Redis
+src/higgsfield/deliver.ts  Bajada del video y subida a la carpeta de Drive
+src/higgsfield/processResult.ts  Confirma el resultado, entrega y avisa
+src/higgsfield/messages.ts Textos de Discord del flujo
+src/higgsfield/webhookToken.ts  Token de la URL del webhook
+src/higgsfield/constants.ts  Valores fijos de Higgsfield
+src/discord/generateCommand.ts  Comando /generar-video
+src/drive/upload.ts        Creacion de archivos en Drive por streaming
 scripts/registerDiscordCommands.ts  Registro de comandos en el servidor
 vercel.json                Cron y limites
 ```
@@ -129,13 +140,14 @@ vercel.json                Cron y limites
 
 | API | Uso |
 |---|---|
-| Google Drive API v3 | `files.list`, `files.get` (metadatos y binario), `files.update` |
+| Google Drive API v3 | `files.list`, `files.get` (metadatos y binario), `files.update`, `files.create` (videos de Higgsfield) |
 | Discord API v10 | `PUT /applications/{app}/guilds/{guild}/commands`, `PATCH /webhooks/{app}/{token}/messages/@original` |
 | LinkedIn REST API (202609) | `/rest/images`, `/rest/videos` (initialize, finalize, estado), `/rest/posts` |
 | TikTok Content Posting API v2 | `oauth/token`, `post/publish/creator_info/query`, `post/publish/video/init`, `post/publish/status/fetch` |
 | TikTok Display API v2 | `video/list` (metricas) |
 | YouTube Data API v3 (lectura) | `channels.list`, `playlistItems.list`, `videos.list` (metricas) |
-| Upstash Redis REST | `GET` / `SET` del token de TikTok |
+| Upstash Redis REST | `GET` / `SET` del token de TikTok; `SET NX EX` y `DEL` de pedidos de Higgsfield |
+| Higgsfield API | `POST /{modelo}?hf_webhook=...` (texto a video), `GET /requests/{id}/status` |
 | Meta Graph API v21.0 | `/{page}/photos`, `/{ig-user}/media`, `/{ig-user}/media_publish`, `/{page}/posts` e insights (metricas) |
 
 ## Decisiones tecnicas
@@ -188,3 +200,12 @@ vercel.json                Cron y limites
   cargarlo en memoria; la libreria `googleapis` renueva el access token con el refresh
   token guardado en Redis. Una cuenta de servicio no puede subir a un canal, por eso se
   autoriza con la cuenta de Google del canal via `/conectar-youtube`.
+- **Higgsfield por webhook, verificado con la API:** generar un video tarda minutos y el
+  token de una interaccion de Discord vence a los 15, asi que el resultado llega por
+  webhook y se avisa en el canal con el bot. Como Higgsfield no firma los webhooks, el
+  cuerpo solo aporta el `request_id`: el estado y la URL del video se leen de
+  `/requests/{id}/status` con la clave propia, y solo se procesan pedidos guardados en
+  Redis. El webhook responde al instante (Higgsfield corta a los 10 s) y la entrega
+  sigue con `waitUntil`; un candado `SET NX` evita procesar dos veces el mismo pedido.
+- **El prompt no es el caption:** el video entra a la cola con la descripcion vacia para
+  que marketing escriba el texto publico en Drive.
