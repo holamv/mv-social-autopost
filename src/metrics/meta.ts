@@ -7,7 +7,7 @@ const RECENT_POST_LIMIT = 50
 const FACEBOOK_FIELDS = 'permalink_url,created_time,shares,reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0)'
 const INSTAGRAM_FIELDS = 'permalink,timestamp,like_count,comments_count'
 const FACEBOOK_REACH_METRIC = 'post_impressions_unique'
-const INSTAGRAM_INSIGHT_METRICS = 'views,saved'
+const INSTAGRAM_INSIGHT_METRICS = 'reach,views,saved,shares'
 const INSIGHT_VALUE_FIELDS = 'name,values'
 const FOLLOWERS_FIELD = 'followers_count'
 
@@ -79,10 +79,12 @@ async function instagramEntry(media: InstagramMedia, url: string): Promise<PostM
     url,
     publishedAt: toIsoDate(media.timestamp),
     metrics: {
+      reach: insights.reach ?? null,
       views: insights.views ?? null,
       likes: toCount(media.like_count),
       comments: toCount(media.comments_count),
       saves: insights.saved ?? null,
+      shares: insights.shares ?? null,
     },
   }
 }

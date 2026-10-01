@@ -275,6 +275,10 @@ Si una red falla (por ejemplo TikTok sin el scope `video.list`), las demas se de
 igual y el error queda en `data.failures`. Sin `METRICS_API_TOKEN` el endpoint responde
 503 y no lee nada.
 
+En Instagram cada publicacion trae `reach`, `views`, `saves` y `shares` de sus estadisticas.
+Las cuatro dependen de que el token de Meta tenga `instagram_manage_insights`; sin ese
+permiso salen en `null`. En Facebook, `reach` necesita `read_insights`.
+
 `data.followers` trae los seguidores actuales de cada red (`facebook`, `instagram`,
 `youtube`, `tiktok`). Con eso el data lake calcula los seguidores netos de la semana
 (KPI #702). Una red que no se puede leer va en `null` y no afecta a las publicaciones:
