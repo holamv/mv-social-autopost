@@ -9,6 +9,7 @@ Permite manejar la publicacion desde el Discord de Manzana Verde sin esperar al 
 | `/horario [red] [horas]` | Ver: cualquiera. Cambiar: los mismos que `/publicar-ahora` | Sin opciones muestra los horarios. Con `red` y `horas` (`9,13,19`, `siempre` o `pausa`) los cambia |
 | `/conectar-tiktok` | Los mismos que `/publicar-ahora` | Da un enlace firmado (vence en 10 min) para autorizar la cuenta de TikTok de MV |
 | `/conectar-youtube` | Los mismos que `/publicar-ahora` | Igual, para el canal de YouTube. Cada enlace solo sirve para su red |
+| `/generar-video` | Los mismos que `/publicar-ahora` | Pide un video a Higgsfield con un `prompt` y lo deja en la carpeta `LinkedIn/`, `TikTok/` o `YouTube/` que elijas. Avisa en el mismo canal cuando esta en Drive (tarda unos minutos) |
 
 ## Aprobacion de TikTok
 
@@ -95,7 +96,7 @@ export DISCORD_GUILD_ID='619991595613290496'
 npm run discord:register
 ```
 
-Debe imprimir `Registered commands: /estado, /publicar-ahora, /horario, /conectar-tiktok, /conectar-youtube`. Se vuelve a correr solo
+Debe imprimir `Registered commands: /estado, /publicar-ahora, /horario, /conectar-tiktok, /conectar-youtube, /generar-video`. Se vuelve a correr solo
 si cambian los comandos en `src/discord/commandDefinitions.ts`.
 
 ### 6. Dar acceso a `/publicar-ahora`
@@ -123,3 +124,19 @@ Se guardan en Redis, asi que cambian al instante sin redeploy. `/publicar-ahora`
 ignora a proposito. En TikTok, el horario decide cuando llegan los videos a aprobacion.
 Si Redis no responde, el cron no publica nada en esa corrida en vez de publicar fuera
 de horario.
+
+## Videos con Higgsfield
+
+1. `/generar-video` manda el `prompt` a Higgsfield y guarda el pedido en Redis por 7 dias.
+2. Higgsfield avisa a `/api/higgsfield/webhook` cuando termina. El aviso no viene
+   firmado, asi que la URL lleva un token derivado de `MEDIA_SIGNING_SECRET` y el
+   servidor confirma el resultado consultando a Higgsfield con la clave propia.
+   Solo se procesan pedidos que estan en Redis.
+3. El video se pasa por streaming a la carpeta elegida como
+   `higgsfield-<fecha>-<id>.mp4`. Sin numero al inicio, queda al final de la cola.
+4. El bot avisa en el canal con el enlace. El texto del post se escribe en la
+   descripcion del archivo en Drive: el prompt no se usa como caption.
+
+La cuenta de servicio solo puede crear archivos dentro de una **unidad compartida**.
+Si la carpeta de origen esta en un Drive personal, el bot avisa que no pudo dejar el video.
+

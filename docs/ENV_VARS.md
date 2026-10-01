@@ -103,6 +103,18 @@ Opcionales. Si falta cualquiera, la carpeta `TikTok/` no se procesa y `/estado` 
 | `DISCORD_BOT_TOKEN` | Ver seccion del bot. Hace falta para mandar los mensajes de aprobacion |
 | `DISCORD_TIKTOK_CHANNEL_ID` | ID del canal de Discord donde se aprueba cada video |
 
+## Higgsfield (videos con IA)
+
+Opcionales. Encienden `/generar-video`. Ademas hacen falta `DISCORD_BOT_TOKEN` (para
+avisar en el canal cuando el video esta listo) y Redis (`KV_REST_API_URL` y
+`KV_REST_API_TOKEN`, para recordar cada pedido hasta que termine).
+
+| Variable | Obligatoria | Default | De donde sale |
+|---|---|---|---|
+| `HF_API_KEY_ID` | para Higgsfield | — | console.higgsfield.ai → API keys. Es la parte antes de `:` |
+| `HF_API_KEY_SECRET` | para Higgsfield | — | Misma credencial, la parte despues de `:`. Secreto |
+| `HF_VIDEO_MODEL` | no | `kling-video/v2.5-turbo/pro/text-to-video` | Ruta del modelo de texto a video en Higgsfield, sin barra inicial (ej. `minimax/hailuo-2.3/standard/text-to-video`) |
+
 ## Bot de Discord
 
 Opcionales: si faltan, el cron sigue funcionando y solo `/api/discord/interactions`
@@ -113,7 +125,7 @@ responde 500. Ver [DISCORD_BOT.md](DISCORD_BOT.md).
 | `DISCORD_APPLICATION_ID` | Vercel | Portal de Discord → General Information |
 | `DISCORD_PUBLIC_KEY` | Vercel | Portal de Discord → General Information |
 | `DISCORD_PUBLISHER_IDS` | Vercel, opcional | IDs de usuario o rol de Discord que pueden usar `/publicar-ahora`, separados por coma. Los administradores siempre pueden |
-| `DISCORD_BOT_TOKEN` | Tu maquina para `npm run discord:register`; Vercel si se usa TikTok | Portal de Discord → Bot → Reset Token |
+| `DISCORD_BOT_TOKEN` | Tu maquina para `npm run discord:register`; Vercel si se usa TikTok o `/generar-video` | Portal de Discord → Bot → Reset Token |
 | `DISCORD_TIKTOK_CHANNEL_ID` | Vercel, para TikTok | Clic derecho sobre el canal de aprobacion → Copiar ID del canal |
 | `DISCORD_GUILD_ID` | Solo tu maquina | ID del servidor de MV: `619991595613290496` |
 

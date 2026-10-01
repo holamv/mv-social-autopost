@@ -3,13 +3,16 @@ export const PUBLISH_NOW_COMMAND = 'publicar-ahora'
 export const CONNECT_TIKTOK_COMMAND = 'conectar-tiktok'
 export const CONNECT_YOUTUBE_COMMAND = 'conectar-youtube'
 export const SCHEDULE_COMMAND = 'horario'
+export const GENERATE_VIDEO_COMMAND = 'generar-video'
 
 export const NETWORK_OPTION = 'red'
 export const HOURS_OPTION = 'horas'
+export const PROMPT_OPTION = 'prompt'
 export const ALL_NETWORKS_VALUE = 'todas'
 
 const CHAT_INPUT_COMMAND_TYPE = 1
 const STRING_OPTION_TYPE = 3
+const PROMPT_MAX_LENGTH = 1500
 
 export interface CommandChoice {
   name: string
@@ -21,6 +24,7 @@ export interface CommandOption {
   name: string
   description: string
   required?: boolean
+  max_length?: number
   choices?: CommandChoice[]
 }
 
@@ -40,6 +44,12 @@ export const NETWORK_CHOICES: CommandChoice[] = [
   { name: 'TikTok', value: 'tiktok' },
   { name: 'YouTube Shorts', value: 'youtube' },
 ]
+
+const VIDEO_NETWORK_VALUES = ['linkedin', 'tiktok', 'youtube']
+
+export const VIDEO_NETWORK_CHOICES: CommandChoice[] = NETWORK_CHOICES.filter((choice) =>
+  VIDEO_NETWORK_VALUES.includes(choice.value),
+)
 
 export const COMMAND_DEFINITIONS: CommandDefinition[] = [
   {
@@ -82,5 +92,26 @@ export const COMMAND_DEFINITIONS: CommandDefinition[] = [
     name: CONNECT_YOUTUBE_COMMAND,
     description: 'Da el enlace para autorizar el canal de YouTube de Manzana Verde',
     type: CHAT_INPUT_COMMAND_TYPE,
+  },
+  {
+    name: GENERATE_VIDEO_COMMAND,
+    description: 'Genera un video con Higgsfield y lo deja en la carpeta de Drive de la red que elijas',
+    type: CHAT_INPUT_COMMAND_TYPE,
+    options: [
+      {
+        type: STRING_OPTION_TYPE,
+        name: PROMPT_OPTION,
+        description: 'Que debe mostrar el video',
+        required: true,
+        max_length: PROMPT_MAX_LENGTH,
+      },
+      {
+        type: STRING_OPTION_TYPE,
+        name: NETWORK_OPTION,
+        description: 'Carpeta de Drive donde queda el video',
+        required: true,
+        choices: VIDEO_NETWORK_CHOICES,
+      },
+    ],
   },
 ]
