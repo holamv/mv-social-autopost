@@ -1,12 +1,13 @@
 import { MS_PER_SECOND } from '../config/constants.js'
-import { tikTokPost } from '../tiktok/api.js'
-import { TIKTOK_VIDEO_LIST_PATH } from '../tiktok/constants.js'
+import { tikTokGet, tikTokPost } from '../tiktok/api.js'
+import { TIKTOK_USER_INFO_PATH, TIKTOK_VIDEO_LIST_PATH } from '../tiktok/constants.js'
 import { toCount, toIsoDate } from './numbers.js'
 import type { PostMetrics } from './types.js'
 
 const PAGE_SIZE = 20
 const MAX_PAGES = 3
 const VIDEO_FIELDS = 'id,create_time,share_url,view_count,like_count,comment_count,share_count'
+const FOLLOWER_FIELDS = 'follower_count'
 
 interface TikTokVideo {
   id: string
@@ -22,6 +23,10 @@ interface VideoPage {
   videos?: TikTokVideo[]
   cursor?: number
   has_more?: boolean
+}
+
+interface UserInfo {
+  user?: { follower_count?: number }
 }
 
 function toPostMetrics(video: TikTokVideo): PostMetrics {
@@ -56,4 +61,10 @@ export async function collectTikTok(): Promise<PostMetrics[]> {
   }
 
   return videos.filter((video) => video.share_url).map(toPostMetrics)
+}
+
+export async function readTikTokFollowers(): Promise<number | null> {
+  const result = await tikTokGet<UserInfo>(`${TIKTOK_USER_INFO_PATH}?fields=${FOLLOWER_FIELDS}`)
+
+  return toCount(result.user?.follower_count)
 }

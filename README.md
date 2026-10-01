@@ -275,6 +275,23 @@ Si una red falla (por ejemplo TikTok sin el scope `video.list`), las demas se de
 igual y el error queda en `data.failures`. Sin `METRICS_API_TOKEN` el endpoint responde
 503 y no lee nada.
 
+En Instagram cada publicacion trae `reach`, `views`, `saves` y `shares` de sus estadisticas.
+Las cuatro dependen de que el token de Meta tenga `instagram_manage_insights`; sin ese
+permiso salen en `null`. En Facebook, `reach` necesita `read_insights`.
+
+`data.followers` trae los seguidores actuales de cada red (`facebook`, `instagram`,
+`youtube`, `tiktok`). Con eso el data lake calcula los seguidores netos de la semana
+(KPI #702). Una red que no se puede leer va en `null` y no afecta a las publicaciones:
+
+- **Facebook e Instagram:** `followers_count` de la pagina y de la cuenta, con el mismo token.
+- **YouTube:** suscriptores del canal conectado. YouTube los redondea a 3 cifras
+  (12 345 → 12 300), y si el canal oculta el numero sale `null`.
+- **TikTok:** necesita el scope `user.info.stats`, que hoy no se pide. Para activarlo:
+  agregarlo primero a la app en developers.tiktok.com (si se pide sin que la app lo
+  tenga, TikTok rechaza toda la conexion), despues sumarlo a `TIKTOK_SCOPES` en
+  `src/tiktok/constants.ts`, redeployar y volver a correr `/conectar-tiktok`. Hasta
+  entonces sale `null`.
+
 ## 3. Variables de entorno
 
 Copiar `.env.example` a `.env.local` para desarrollo y cargarlas en Vercel en
