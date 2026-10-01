@@ -96,7 +96,12 @@ export function getEnv(): Env {
   const parsed = envSchema.safeParse(process.env)
 
   if (!parsed.success) {
-    throw new EnvConfigError(parsed.error.issues.map((issue) => issue.path.join('.')))
+    const failingVariables = parsed.error.issues.map((issue) => ({
+      variable: issue.path.join('.'),
+      code: issue.code,
+    }))
+    console.error('[Env] Invalid environment variables:', JSON.stringify(failingVariables))
+    throw new EnvConfigError(failingVariables.map(({ variable }) => variable))
   }
 
   cachedEnv = parsed.data
