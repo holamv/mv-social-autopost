@@ -1,6 +1,6 @@
 # PROJECT_SCOPE - mv-social-autopost
 
-**Version:** 1.4.0
+**Version:** 1.4.1
 **Estado:** base funcional, sin desplegar
 **Ultima actualizacion:** 2026-10-01
 
@@ -57,6 +57,7 @@ Fuera del alcance por ahora:
 | Bot informa en Discord que variable esta mal configurada | done |
 | `/publicar-ahora` habilitado por lista de usuarios o roles (`DISCORD_PUBLISHER_IDS`) | done |
 | Bot de Discord: `/estado` y `/publicar-ahora` por HTTP interactions | done (falta crear la app y agregarla al servidor) |
+| Log de variables de entorno invalidas en Vercel (sin valores) | done |
 | Tests unitarios (ordering, signedUrl, pipeline, discord) | pendiente |
 | Alertas a Discord cuando una publicacion falla | pendiente |
 | Soporte de carrusel y video | pendiente |
