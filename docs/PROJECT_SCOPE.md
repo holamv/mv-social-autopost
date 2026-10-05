@@ -40,6 +40,7 @@ Fuera del alcance por ahora:
 | `/publicar-ahora` por red y `/horario` por carpeta (Redis, zona `SCHEDULE_TIMEZONE`) | done |
 | YouTube Shorts (`YouTube/`, subida en streaming desde Drive, `/conectar-youtube`) | done (falta cliente OAuth y conectar el canal) |
 | Endpoint `GET /api/metrics` para el panel viral del plan de contenidos (FB, IG, YouTube, TikTok) | done (falta `METRICS_API_TOKEN` y reconectar TikTok con `video.list`) |
+| Reporte semanal de contenido en Discord (lunes 09:00 Lima): KPIs #693-#702 de la semana cerrada vs la anterior y vs baseline de exp-2026-058 | done (falta `DATALAKE_API_TOKEN` y `DISCORD_REPORT_CHANNEL_ID`) |
 | `/generar-video`: video con Higgsfield que queda en `LinkedIn/`, `TikTok/` o `YouTube/` de Drive | 🚧 WIP (codigo listo; falta cargar variables en Vercel, registrar el comando y probar con un pedido real) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
@@ -64,6 +65,9 @@ Fuera del alcance por ahora:
 api/cron/publish.ts        Handler del cron
 api/media.ts               Handler de la imagen firmada
 api/metrics.ts             Metricas de lo publicado, protegido con METRICS_API_TOKEN
+api/cron/weekly-report.ts  Reporte de los lunes, protegido con CRON_SECRET
+src/report/weeklyKpis.ts   Lectura de /api/dris/weekly-evolution del data lake
+src/report/contentReport.ts  Texto del reporte (semana cerrada, cambio, historia)
 src/metrics/collect.ts     Lee las cuatro redes y junta los resultados
 src/metrics/meta.ts        Posts de la pagina y media de Instagram con insights
 src/metrics/youtube.ts     Subidas del canal conectado y sus estadisticas

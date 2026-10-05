@@ -14,6 +14,7 @@ const DEFAULT_LINKEDIN_API_VERSION = '202609'
 const optionalSecret = z.string().trim().min(1).optional()
 const DISCORD_ID_PATTERN = /^\d{17,20}$/
 const DEFAULT_SCHEDULE_TIMEZONE = 'America/Lima'
+const DEFAULT_DATALAKE_BASE_URL = 'https://data-lake-mv.manzanaverde.la'
 const YOUTUBE_PRIVACY_LEVELS = ['public', 'unlisted', 'private'] as const
 const YOUTUBE_CATEGORY_PATTERN = /^\d+$/
 const DEFAULT_YOUTUBE_CATEGORY_ID = '26'
@@ -51,6 +52,9 @@ const envSchema = z
     MEDIA_SIGNING_SECRET: z.string().min(1),
     CRON_SECRET: z.string().min(1),
     METRICS_API_TOKEN: optionalSecret,
+    DATALAKE_BASE_URL: z.string().trim().url().default(DEFAULT_DATALAKE_BASE_URL),
+    DATALAKE_API_TOKEN: optionalSecret,
+    DISCORD_REPORT_CHANNEL_ID: z.string().trim().regex(DISCORD_ID_PATTERN).optional(),
     BATCH_SIZE: z.coerce.number().int().positive().default(DEFAULT_BATCH_SIZE),
     DEFAULT_CAPTION: z.string().default(''),
     LINKEDIN_ORGANIZATION_ID: z.string().trim().regex(LINKEDIN_ORGANIZATION_PATTERN).optional(),

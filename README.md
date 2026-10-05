@@ -275,6 +275,17 @@ Si una red falla (por ejemplo TikTok sin el scope `video.list`), las demas se de
 igual y el error queda en `data.failures`. Sin `METRICS_API_TOKEN` el endpoint responde
 503 y no lee nada.
 
+## 2f. Reporte semanal de contenido (opcional)
+
+Cada lunes a las 09:00 de Lima (`0 14 * * 1` UTC), `/api/cron/weekly-report` lee del data lake
+los KPIs de contenido (#693 piezas, #695 interacciones, #700 vistas, #694 alcance, #701 tasa,
+#702 seguidores) de la ultima semana cerrada y los publica en Discord, comparados con la semana
+anterior y con el baseline de 12 piezas/semana de exp-2026-058. Un KPI sin dato dice "sin dato",
+nunca 0.
+
+Para encenderlo: `DATALAKE_API_TOKEN` y `DISCORD_REPORT_CHANNEL_ID` en Vercel, y redeploy.
+Prueba manual: `curl -H "Authorization: Bearer $CRON_SECRET" https://<dominio>/api/cron/weekly-report`.
+
 ## 3. Variables de entorno
 
 Copiar `.env.example` a `.env.local` para desarrollo y cargarlas en Vercel en
