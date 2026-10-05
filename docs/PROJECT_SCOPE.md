@@ -41,6 +41,7 @@ Fuera del alcance por ahora:
 | YouTube Shorts (`YouTube/`, subida en streaming desde Drive, `/conectar-youtube`) | done (falta cliente OAuth y conectar el canal) |
 | Endpoint `GET /api/metrics` para el panel viral del plan de contenidos (FB, IG, YouTube, TikTok) | done (lo lee tambien el data lake para los KPIs #693-#702) |
 | Seguidores por red en `GET /api/metrics` (`data.followers`, KPI #702) y alcance y compartidos de Instagram (#694, #695) | done (TikTok falta el scope `user.info.stats`) |
+| Alcance de Facebook con `post_total_media_view_unique` (Meta dio de baja `post_impressions_unique`) | done |
 | `/generar-video`: video con Higgsfield que queda en `LinkedIn/`, `TikTok/` o `YouTube/` de Drive | 🚧 WIP (codigo listo; falta cargar variables en Vercel, registrar el comando y probar con un pedido real) |
 | Filtro de publicadas y lock anti-duplicado | done |
 | URL temporal firmada para servir la imagen a Instagram | done |
