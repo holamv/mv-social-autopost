@@ -47,6 +47,9 @@ Ambas carpetas deben estar compartidas con `GOOGLE_CLIENT_EMAIL` con rol **Edito
 | `MEDIA_SIGNING_SECRET` | si | Generar con `openssl rand -hex 32` |
 | `CRON_SECRET` | si | Generar con `openssl rand -hex 32` |
 | `METRICS_API_TOKEN` | no | Generar con `openssl rand -hex 32`. Enciende `GET /api/metrics`; el mismo valor va como secret `AUTOPOST_METRICS_TOKEN` en el repo `mv-plan-contenidos` |
+| `DATALAKE_API_TOKEN` | no | Token del Company Brain (`x-api-key`) para leer `/api/dris/weekly-evolution`. Enciende el reporte semanal de contenido. Lo da BizOps (Julio) |
+| `DATALAKE_BASE_URL` | no | Default `https://data-lake-mv.manzanaverde.la` |
+| `DISCORD_REPORT_CHANNEL_ID` | no | Canal de Discord donde el bot publica el reporte de los lunes (clic derecho en el canal → Copiar ID del canal). El bot necesita permiso para escribir ahí |
 
 `CRON_SECRET` es el unico que Vercel usa por su cuenta: lo manda como
 `Authorization: Bearer ...` al disparar el cron. Sin el, el endpoint queda abierto.
