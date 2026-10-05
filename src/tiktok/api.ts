@@ -1,4 +1,4 @@
-import { HTTP_METHOD_POST } from '../config/constants.js'
+import { HTTP_METHOD_GET, HTTP_METHOD_POST } from '../config/constants.js'
 import { JSON_UTF8_CONTENT_TYPE, OK_ERROR_CODE, TIKTOK_API_BASE_URL, TIKTOK_CREATOR_INFO_PATH, TIKTOK_STATUS_PATH } from './constants.js'
 import { getAccessToken } from './tokens.js'
 
@@ -32,12 +32,7 @@ export interface PublishStatus {
   fail_reason?: string
 }
 
-export async function tikTokPost<T>(path: string, body: unknown = {}): Promise<T> {
-  const response = await fetch(`${TIKTOK_API_BASE_URL}/${path}`, {
-    method: HTTP_METHOD_POST,
-    headers: { Authorization: `Bearer ${await getAccessToken()}`, 'Content-Type': JSON_UTF8_CONTENT_TYPE },
-    body: JSON.stringify(body),
-  })
+async function readEnvelope<T>(response: Response, path: string): Promise<T> {
   const payload = (await response.json()) as TikTokEnvelope<T>
   const code = payload.error?.code ?? String(response.status)
 
@@ -46,6 +41,25 @@ export async function tikTokPost<T>(path: string, body: unknown = {}): Promise<T
   }
 
   return payload.data
+}
+
+export async function tikTokPost<T>(path: string, body: unknown = {}): Promise<T> {
+  const response = await fetch(`${TIKTOK_API_BASE_URL}/${path}`, {
+    method: HTTP_METHOD_POST,
+    headers: { Authorization: `Bearer ${await getAccessToken()}`, 'Content-Type': JSON_UTF8_CONTENT_TYPE },
+    body: JSON.stringify(body),
+  })
+
+  return readEnvelope<T>(response, path)
+}
+
+export async function tikTokGet<T>(path: string): Promise<T> {
+  const response = await fetch(`${TIKTOK_API_BASE_URL}/${path}`, {
+    method: HTTP_METHOD_GET,
+    headers: { Authorization: `Bearer ${await getAccessToken()}` },
+  })
+
+  return readEnvelope<T>(response, path)
 }
 
 export function queryCreatorInfo(): Promise<CreatorInfo> {

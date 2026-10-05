@@ -5,6 +5,7 @@ export const TIKTOK_CREATOR_INFO_PATH = 'post/publish/creator_info/query/'
 export const TIKTOK_VIDEO_INIT_PATH = 'post/publish/video/init/'
 export const TIKTOK_STATUS_PATH = 'post/publish/status/fetch/'
 export const TIKTOK_VIDEO_LIST_PATH = 'video/list/'
+export const TIKTOK_USER_INFO_PATH = 'user/info/'
 export const TIKTOK_CALLBACK_ROUTE = '/api/tiktok/callback'
 export const TIKTOK_SCOPES = 'user.info.basic,video.publish,video.upload,video.list'
 

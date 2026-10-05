@@ -4,6 +4,7 @@ import type { PostMetrics } from './types.js'
 
 const RECENT_VIDEO_LIMIT = 50
 const CHANNEL_PARTS = ['contentDetails']
+const STATISTICS_PARTS = ['statistics']
 const PLAYLIST_PARTS = ['contentDetails']
 const VIDEO_PARTS = ['statistics', 'snippet']
 const SHORTS_URL_PREFIX = 'https://www.youtube.com/shorts/'
@@ -37,4 +38,12 @@ export async function collectYouTube(): Promise<PostMetrics[]> {
       shares: null,
     },
   }))
+}
+
+export async function readYouTubeSubscribers(): Promise<number | null> {
+  const youtube = await getYouTubeClient()
+  const channels = await youtube.channels.list({ part: STATISTICS_PARTS, mine: true })
+  const statistics = channels.data.items?.[0]?.statistics
+
+  return statistics?.hiddenSubscriberCount ? null : toCount(statistics?.subscriberCount)
 }

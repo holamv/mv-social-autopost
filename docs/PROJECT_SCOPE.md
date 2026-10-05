@@ -39,7 +39,8 @@ Fuera del alcance por ahora:
 | TikTok con aprobacion en Discord (`/conectar-tiktok`, menu de privacidad, boton publicar) | done (falta app de TikTok y Redis) |
 | `/publicar-ahora` por red y `/horario` por carpeta (Redis, zona `SCHEDULE_TIMEZONE`) | done |
 | YouTube Shorts (`YouTube/`, subida en streaming desde Drive, `/conectar-youtube`) | done (falta cliente OAuth y conectar el canal) |
-| Endpoint `GET /api/metrics` para el panel viral del plan de contenidos (FB, IG, YouTube, TikTok) | done (falta `METRICS_API_TOKEN` y reconectar TikTok con `video.list`) |
+| Endpoint `GET /api/metrics` para el panel viral del plan de contenidos (FB, IG, YouTube, TikTok) | done (lo lee tambien el data lake para los KPIs #693-#702) |
+| Seguidores por red en `GET /api/metrics` (`data.followers`, KPI #702) y alcance y compartidos de Instagram (#694, #695) | done (TikTok falta el scope `user.info.stats`) |
 | Reporte semanal de contenido en Discord (lunes 09:00 Lima): KPIs #693-#702 de la semana cerrada vs la anterior y vs baseline de exp-2026-058 | done (falta `DATALAKE_API_TOKEN` y `DISCORD_REPORT_CHANNEL_ID`) |
 | `/generar-video`: video con Higgsfield que queda en `LinkedIn/`, `TikTok/` o `YouTube/` de Drive | 🚧 WIP (codigo listo; falta cargar variables en Vercel, registrar el comando y probar con un pedido real) |
 | Filtro de publicadas y lock anti-duplicado | done |
@@ -69,9 +70,9 @@ api/cron/weekly-report.ts  Reporte de los lunes, protegido con CRON_SECRET
 src/report/weeklyKpis.ts   Lectura de /api/dris/weekly-evolution del data lake
 src/report/contentReport.ts  Texto del reporte (semana cerrada, cambio, historia)
 src/metrics/collect.ts     Lee las cuatro redes y junta los resultados
-src/metrics/meta.ts        Posts de la pagina y media de Instagram con insights
-src/metrics/youtube.ts     Subidas del canal conectado y sus estadisticas
-src/metrics/tiktok.ts      Videos de la cuenta conectada (video.list)
+src/metrics/meta.ts        Posts de la pagina y media de Instagram con insights, y seguidores
+src/metrics/youtube.ts     Subidas del canal conectado, sus estadisticas y suscriptores
+src/metrics/tiktok.ts      Videos de la cuenta conectada (video.list) y seguidores (user/info)
 src/metrics/numbers.ts     Conversion de conteos y fechas
 src/metrics/types.ts       Contrato de la respuesta
 api/discord/interactions.ts  Endpoint de comandos de Discord
