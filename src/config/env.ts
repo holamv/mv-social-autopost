@@ -52,6 +52,8 @@ const envSchema = z
     MEDIA_SIGNING_SECRET: z.string().min(1),
     CRON_SECRET: z.string().min(1),
     METRICS_API_TOKEN: optionalSecret,
+    GENERATOR_API_TOKEN: optionalSecret,
+    META_INSTAGRAM_COUNTRY: z.enum(['PE', 'MX', 'CO']).default('PE'),
     DATALAKE_BASE_URL: z.string().trim().url().default(DEFAULT_DATALAKE_BASE_URL),
     DATALAKE_API_TOKEN: optionalSecret,
     DISCORD_REPORT_CHANNEL_ID: z.string().trim().regex(DISCORD_ID_PATTERN).optional(),
