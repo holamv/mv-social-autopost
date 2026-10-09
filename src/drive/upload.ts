@@ -9,6 +9,7 @@ export interface UploadRequest {
   mimeType: string
   body: Readable
   appProperties: Record<string, string>
+  description?: string
 }
 
 export interface UploadedFile {
@@ -18,7 +19,12 @@ export interface UploadedFile {
 
 export async function uploadFile(request: UploadRequest): Promise<UploadedFile> {
   const response = await getDriveClient().files.create({
-    requestBody: { name: request.name, parents: [request.folderId], appProperties: request.appProperties },
+    requestBody: {
+      name: request.name,
+      parents: [request.folderId],
+      appProperties: request.appProperties,
+      description: request.description,
+    },
     media: { mimeType: request.mimeType, body: request.body },
     fields: UPLOAD_RESPONSE_FIELDS,
     supportsAllDrives: true,

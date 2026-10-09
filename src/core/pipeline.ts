@@ -46,7 +46,7 @@ async function proposeQueue(queue: RouteQueue, outcome: BatchOutcome): Promise<v
   }
 }
 
-async function publishImage(image: PendingImage, route: PublishRoute, deadline: Deadline): Promise<PublishedImage> {
+export async function publishImage(image: PendingImage, route: PublishRoute, deadline: Deadline): Promise<PublishedImage> {
   await claimImage(image.id)
 
   const postIds: ChannelPostIds = { ...image.postIds }
