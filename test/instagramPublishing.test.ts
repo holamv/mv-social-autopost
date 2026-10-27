@@ -50,7 +50,8 @@ globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
 
 const { CHANNEL_PUBLISHERS } = await import('../src/core/publishers.ts')
 const { graphGet } = await import('../src/meta/client.ts')
-const { SubmissionError, submitFromGenerator } = await import('../src/generator/submit.ts')
+const { SubmissionError, sourceProperties, submitFromGenerator } = await import('../src/generator/submit.ts')
+const { toPendingImage } = await import('../src/drive/listPending.ts')
 
 const deadline = { remainingMs: () => ENOUGH_TIME_MS, isExpired: () => false }
 
@@ -101,6 +102,28 @@ describe('Instagram publishing by country', () => {
   it('keeps the main token for Facebook and metrics calls', async () => {
     await graphGet('page-main', 'followers_count')
     assert.equal(calls[0]?.token, MAIN_TOKEN)
+  })
+})
+
+describe('country round trip through the Drive file', () => {
+  beforeEach(() => {
+    calls.length = 0
+  })
+
+  function uploadedFile(country: 'MX' | null) {
+    return toPendingImage({ id: 'file-2', name: 'post.jpg', appProperties: sourceProperties(country) }, '')
+  }
+
+  it('publishes on Mexico what the generator uploaded for Mexico', async () => {
+    await CHANNEL_PUBLISHERS.instagram(uploadedFile('MX'), deadline)
+    assert.ok(calls[0]?.path.endsWith('/ig-mexico/media'))
+    assert.ok(calls.every((call) => call.token === MEXICO_TOKEN))
+  })
+
+  it('publishes on the main account what was uploaded without country', async () => {
+    await CHANNEL_PUBLISHERS.instagram(uploadedFile(null), deadline)
+    assert.ok(calls[0]?.path.endsWith('/ig-main/media'))
+    assert.ok(calls.every((call) => call.token === MAIN_TOKEN))
   })
 })
 

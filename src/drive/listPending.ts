@@ -55,7 +55,7 @@ function readPostIds(properties: Record<string, string>): ChannelPostIds {
   return postIds
 }
 
-function toPendingImage(file: drive_v3.Schema$File, defaultCaption: string): PendingImage {
+export function toPendingImage(file: drive_v3.Schema$File, defaultCaption: string): PendingImage {
   const properties = file.appProperties ?? {}
 
   return {

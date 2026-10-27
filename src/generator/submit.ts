@@ -89,7 +89,7 @@ function instagramCountryFor(submission: Submission): InstagramCountry | null {
   return country
 }
 
-function sourceProperties(country: InstagramCountry | null): Record<string, string> {
+export function sourceProperties(country: InstagramCountry | null): Record<string, string> {
   return country ? { ...SOURCE_PROPERTY, [INSTAGRAM_COUNTRY_KEY]: country } : SOURCE_PROPERTY
 }
 

@@ -76,9 +76,14 @@ La imagen se sube a la carpeta `Instagram/` del Drive del autopost, porque Insta
 baja la imagen desde `/api/media` y esa ruta la sirve desde Drive. Al subirla se guarda
 el pais en la propiedad `mvInstagramCountry`. El publicador lee esa propiedad, asi que
 si el cron agarra el archivo antes que el generador, o si se reintenta, la cuenta sale
-bien. Ojo: eso no evita que el cron y el generador publiquen el mismo archivo dos veces
-si coinciden en el mismo medio segundo; es un riesgo que ya existia antes de las
-cuentas por pais.
+bien. Ojo: la cuenta sale bien, pero hay dos caminos a un post duplicado que ya
+existian antes de las cuentas por pais:
+
+- El cron y el generador agarran el mismo archivo si coinciden en el mismo medio
+  segundo, y los dos publican.
+- Si Instagram ya publico y despues falla algo en Drive (guardar el id, marcar o mover
+  el archivo), el generador manda el archivo a la papelera y responde error. Si la
+  persona reintenta, sale un segundo post.
 
 Un archivo sin esa propiedad (los que sube marketing a mano) va a la cuenta principal,
 como antes. Un archivo con un valor que no es `PE`, `MX` ni `CO` no se publica: falla
@@ -104,5 +109,10 @@ Mismo formato que el resto del repo: `[Modulo] Frase`, con el archivo y el pais.
 `npm test` corre `test/` con el runner de Node. `test/instagramPublishing.test.ts`
 simula Meta reemplazando `fetch` y comprueba que un archivo de MX sale por la cuenta y
 el token de MX, que uno sin pais sale por la principal y que un pais sin cuenta o
-desconocido falla sin llamar a Meta. `test/support/resolveTs.mjs` deja que Node resuelva
-los imports `.js` del codigo a sus archivos `.ts`.
+desconocido falla sin llamar a Meta. Tambien hace la ida y vuelta completa: las
+propiedades que escribe el generador (`sourceProperties`) se leen como las lee el cron
+(`toPendingImage`) y el post sale por la cuenta de ese pais.
+
+`test/support/resolveTs.mjs` deja que Node resuelva los imports `.js` del codigo a sus
+archivos `.ts`. Usa `module.registerHooks`, asi que `npm test` necesita Node 22.15 o
+mas nuevo (Vercel solo ejecuta las funciones, no los tests).
