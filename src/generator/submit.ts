@@ -1,7 +1,8 @@
 import { Readable } from 'node:stream'
 import { z } from 'zod'
 import { getEnv } from '../config/env.js'
-import { BYTES_PER_MEGABYTE, MAX_IMAGE_MEGABYTES } from '../config/constants.js'
+import { BYTES_PER_MEGABYTE, INSTAGRAM_COUNTRY_KEY, MAX_IMAGE_MEGABYTES } from '../config/constants.js'
+import { INSTAGRAM_COUNTRIES, type InstagramCountry } from '../config/instagramAccounts.js'
 import { createDeadline } from '../core/deadline.js'
 import { publishImage } from '../core/pipeline.js'
 import { resolveRoutes } from '../core/routes.js'
@@ -9,19 +10,20 @@ import { getDriveClient } from '../drive/client.js'
 import { getPendingFile } from '../drive/listPending.js'
 import { uploadFile } from '../drive/upload.js'
 import { graphGet } from '../meta/client.js'
+import { instagramAccountFor } from '../meta/instagram.js'
 import type { ChannelPostIds, PublishRoute, RouteKey } from '../types.js'
 
 const GENERATOR_CHANNELS = ['instagram', 'linkedin'] as const
-const COUNTRIES = ['PE', 'MX', 'CO'] as const
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png']
 const SOURCE_PROPERTY = { mvSource: 'generador-de-posts' }
 const FILE_EXTENSIONS: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png' }
+const USERNAME_FIELD = 'username'
 
 export type GeneratorChannel = (typeof GENERATOR_CHANNELS)[number]
 
 export const submissionSchema = z.object({
   channel: z.enum(GENERATOR_CHANNELS),
-  country: z.enum(COUNTRIES).optional(),
+  country: z.enum(INSTAGRAM_COUNTRIES).optional(),
   caption: z.string().trim().min(1),
   mimeType: z.string().refine((value) => ALLOWED_MIME_TYPES.includes(value), 'solo JPG o PNG'),
   dataBase64: z.string().min(1),
@@ -41,6 +43,11 @@ export interface SubmissionResult {
   postIds: ChannelPostIds
 }
 
+interface InstagramAccountState {
+  connected: boolean
+  username: string | null
+}
+
 async function routeFor(channel: GeneratorChannel): Promise<PublishRoute> {
   const route = (await resolveRoutes()).find((candidate) => candidate.key === (channel as RouteKey))
 
@@ -55,12 +62,23 @@ async function routeFor(channel: GeneratorChannel): Promise<PublishRoute> {
   return route
 }
 
-function assertCountry(submission: Submission): void {
-  const accountCountry = getEnv().META_INSTAGRAM_COUNTRY
-
-  if (submission.channel === 'instagram' && submission.country && submission.country !== accountCountry) {
-    throw new SubmissionError(`El autopost solo tiene conectada la cuenta de Instagram de ${accountCountry}`, 409)
+function instagramCountryFor(submission: Submission): InstagramCountry | null {
+  if (submission.channel !== 'instagram') {
+    return null
   }
+
+  const country = submission.country ?? getEnv().META_INSTAGRAM_COUNTRY
+
+  if (!instagramAccountFor(country)) {
+    console.warn(`[Generator] instagram_post_rejected reason=account_missing country=${country}`)
+    throw new SubmissionError(`El autopost aun no tiene conectada la cuenta de Instagram de ${country}`, 409)
+  }
+
+  return country
+}
+
+function sourceProperties(country: InstagramCountry | null): Record<string, string> {
+  return country ? { ...SOURCE_PROPERTY, [INSTAGRAM_COUNTRY_KEY]: country } : SOURCE_PROPERTY
 }
 
 function decodeMedia(submission: Submission): Buffer {
@@ -82,7 +100,7 @@ async function discardFile(fileId: string): Promise<void> {
 }
 
 export async function submitFromGenerator(submission: Submission): Promise<SubmissionResult> {
-  assertCountry(submission)
+  const country = instagramCountryFor(submission)
   const route = await routeFor(submission.channel)
   const extension = FILE_EXTENSIONS[submission.mimeType]
   const uploaded = await uploadFile({
@@ -90,7 +108,7 @@ export async function submitFromGenerator(submission: Submission): Promise<Submi
     name: `generador-${new Date().toISOString().replace(/[:.]/g, '-')}.${extension}`,
     mimeType: submission.mimeType,
     body: Readable.from(decodeMedia(submission)),
-    appProperties: SOURCE_PROPERTY,
+    appProperties: sourceProperties(country),
     description: submission.caption,
   })
 
@@ -110,6 +128,28 @@ export async function submitFromGenerator(submission: Submission): Promise<Submi
   }
 }
 
+async function instagramAccountState(country: InstagramCountry): Promise<InstagramAccountState> {
+  const account = instagramAccountFor(country)
+
+  if (!account) {
+    return { connected: false, username: null }
+  }
+
+  try {
+    const profile = await graphGet<{ username?: string }>(account.userId, USERNAME_FIELD, account.accessToken)
+    return { connected: true, username: profile.username || null }
+  } catch (error) {
+    console.warn(`[Generator] instagram_username_unresolved country=${country}:`, error)
+    return { connected: true, username: null }
+  }
+}
+
+async function instagramAccountStates(): Promise<Record<InstagramCountry, InstagramAccountState>> {
+  const states = await Promise.all(INSTAGRAM_COUNTRIES.map(async (country) => [country, await instagramAccountState(country)] as const))
+
+  return Object.fromEntries(states) as Record<InstagramCountry, InstagramAccountState>
+}
+
 export async function generatorStatus(): Promise<Record<string, unknown>> {
   const env = getEnv()
   const routes = await resolveRoutes()
@@ -117,10 +157,15 @@ export async function generatorStatus(): Promise<Record<string, unknown>> {
     const route = routes.find((candidate) => candidate.key === (channel as RouteKey))
     return { enabled: Boolean(route && !route.disabledReason), reason: route ? route.disabledReason : 'falta la carpeta' }
   }
-  const account = await graphGet<{ username?: string }>(env.META_INSTAGRAM_USER_ID, 'username').catch(() => ({ username: '' }))
+  const accounts = await instagramAccountStates()
 
   return {
-    instagram: { ...channelState('instagram'), country: env.META_INSTAGRAM_COUNTRY, username: account.username || null },
+    instagram: {
+      ...channelState('instagram'),
+      country: env.META_INSTAGRAM_COUNTRY,
+      username: accounts[env.META_INSTAGRAM_COUNTRY].username,
+      accounts,
+    },
     linkedin: channelState('linkedin'),
   }
 }

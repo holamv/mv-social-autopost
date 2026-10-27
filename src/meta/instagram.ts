@@ -1,4 +1,9 @@
 import { getEnv } from '../config/env.js'
+import {
+  resolveInstagramAccount,
+  type InstagramAccount,
+  type InstagramCountry,
+} from '../config/instagramAccounts.js'
 import type { Deadline } from '../core/deadline.js'
 import { graphGet, graphPost, MetaApiError } from './client.js'
 import {
@@ -30,13 +35,29 @@ function wait(delayMs: number): Promise<void> {
   })
 }
 
-async function waitForContainer(containerId: string, deadline: Deadline): Promise<void> {
+export function instagramAccountFor(country: InstagramCountry): InstagramAccount | null {
+  return resolveInstagramAccount(getEnv(), country)
+}
+
+export function requireInstagramAccount(country: InstagramCountry | null): InstagramAccount {
+  const wanted = country ?? getEnv().META_INSTAGRAM_COUNTRY
+  const account = instagramAccountFor(wanted)
+
+  if (!account) {
+    console.warn(`[Instagram] instagram_account_missing country=${wanted}`)
+    throw new MetaApiError(`Falta conectar la cuenta de Instagram de ${wanted} (META_INSTAGRAM_USER_ID_${wanted})`, HTTP_INTERNAL_ERROR)
+  }
+
+  return account
+}
+
+async function waitForContainer(containerId: string, deadline: Deadline, accessToken: string): Promise<void> {
   for (let attempt = 0; attempt < INSTAGRAM_POLL_ATTEMPTS; attempt += 1) {
     if (deadline.remainingMs() < INSTAGRAM_POLL_DELAY_MS) {
       throw new MetaApiError(`Sin tiempo para esperar el contenedor ${containerId}`, HTTP_INTERNAL_ERROR)
     }
 
-    const status = await graphGet<ContainerStatusResponse>(containerId, INSTAGRAM_STATUS_FIELD)
+    const status = await graphGet<ContainerStatusResponse>(containerId, INSTAGRAM_STATUS_FIELD, accessToken)
 
     if (status.status_code === INSTAGRAM_STATUS_FINISHED) {
       return
@@ -56,20 +77,23 @@ export async function publishToInstagram(
   imageUrl: string,
   caption: string,
   deadline: Deadline,
+  account: InstagramAccount,
 ): Promise<string> {
-  const env = getEnv()
+  const container = await graphPost<ContainerResponse>(
+    `${account.userId}/${GRAPH_MEDIA_EDGE}`,
+    { [IMAGE_URL_PARAM]: imageUrl, [CAPTION_PARAM]: caption },
+    account.accessToken,
+  )
 
-  const container = await graphPost<ContainerResponse>(`${env.META_INSTAGRAM_USER_ID}/${GRAPH_MEDIA_EDGE}`, {
-    [IMAGE_URL_PARAM]: imageUrl,
-    [CAPTION_PARAM]: caption,
-  })
-
-  await waitForContainer(container.id, deadline)
+  await waitForContainer(container.id, deadline, account.accessToken)
 
   const published = await graphPost<ContainerResponse>(
-    `${env.META_INSTAGRAM_USER_ID}/${GRAPH_MEDIA_PUBLISH_EDGE}`,
+    `${account.userId}/${GRAPH_MEDIA_PUBLISH_EDGE}`,
     { [CREATION_ID_PARAM]: container.id },
+    account.accessToken,
   )
+
+  console.log(`[Instagram] instagram_post_published country=${account.country} mediaId=${published.id}`)
 
   return published.id
 }

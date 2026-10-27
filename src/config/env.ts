@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { DEFAULT_BATCH_SIZE } from './constants.js'
+import { INSTAGRAM_COUNTRIES } from './instagramAccounts.js'
 import { isReadablePrivateKey, normalizePrivateKey } from './privateKey.js'
 
 const MARK_STRATEGIES = ['properties', 'move'] as const
@@ -53,7 +54,13 @@ const envSchema = z
     CRON_SECRET: z.string().min(1),
     METRICS_API_TOKEN: optionalSecret,
     GENERATOR_API_TOKEN: optionalSecret,
-    META_INSTAGRAM_COUNTRY: z.enum(['PE', 'MX', 'CO']).default('PE'),
+    META_INSTAGRAM_COUNTRY: z.enum(INSTAGRAM_COUNTRIES).default(INSTAGRAM_COUNTRIES[0]),
+    META_INSTAGRAM_USER_ID_PE: optionalSecret,
+    META_INSTAGRAM_USER_ID_MX: optionalSecret,
+    META_INSTAGRAM_USER_ID_CO: optionalSecret,
+    META_GRAPH_ACCESS_TOKEN_PE: optionalSecret,
+    META_GRAPH_ACCESS_TOKEN_MX: optionalSecret,
+    META_GRAPH_ACCESS_TOKEN_CO: optionalSecret,
     DATALAKE_BASE_URL: z.string().trim().url().default(DEFAULT_DATALAKE_BASE_URL),
     DATALAKE_API_TOKEN: optionalSecret,
     DISCORD_REPORT_CHANNEL_ID: z.string().trim().regex(DISCORD_ID_PATTERN).optional(),

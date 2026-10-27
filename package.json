@@ -10,6 +10,7 @@
     "dev": "vercel dev",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
     "deploy:staging": "vercel deploy",
     "deploy:production": "vercel deploy --prod",
     "discord:register": "node scripts/registerDiscordCommands.ts"
