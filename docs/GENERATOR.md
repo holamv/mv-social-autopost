@@ -32,6 +32,11 @@ tokens de Meta: su backend reenvia el pedido con `GENERATOR_API_TOKEN`.
 
   `country` y `username` son los de la cuenta principal y se mantienen para que una
   version vieja del generador siga funcionando. El generador nuevo lee `accounts`.
+  El tipo de esta respuesta es `GeneratorStatus` en `src/generator/submit.ts`.
+
+  `connected: true` solo dice que hay un ID cargado para ese pais, no que el token
+  sirva. Si viene con `username: null`, Meta no respondio con esas credenciales: casi
+  siempre es un token vencido o de otra pagina, y publicar tambien va a fallar.
 
 - `POST` publica. Cuerpo: `channel` (`instagram` o `linkedin`), `country` (`PE`, `MX`
   o `CO`, solo Instagram; si falta se usa `META_INSTAGRAM_COUNTRY`), `caption`,
@@ -54,6 +59,12 @@ Si un pais tiene su ID pero no su token, se usa `META_GRAPH_ACCESS_TOKEN`. Eso s
 funciona si ese token es de un usuario del sistema con acceso a las tres paginas; con
 un token de pagina Meta rechaza la publicacion y el error vuelve al generador.
 
+El pais principal tambien acepta `META_INSTAGRAM_USER_ID_PE` y
+`META_GRAPH_ACCESS_TOKEN_PE` (o el sufijo que corresponda). Si se cargan, **pisan** a
+las genericas solo para publicar en Instagram; Facebook y `/api/metrics` siguen
+usando `META_INSTAGRAM_USER_ID` y `META_GRAPH_ACCESS_TOKEN`. Lo normal es no cargarlas:
+si apuntan a otra cuenta, se publica en una y se miden metricas de otra.
+
 Para sacar los valores de Mexico o Colombia se repiten los pasos de la seccion 2 del
 README con un usuario que administre esa pagina: `GET /me/accounts` da el
 `access_token` de la pagina y `GET /{page-id}?fields=instagram_business_account` da el
@@ -64,16 +75,34 @@ ID de la cuenta. Despues de cargarlos en Vercel hay que redeployar.
 La imagen se sube a la carpeta `Instagram/` del Drive del autopost, porque Instagram
 baja la imagen desde `/api/media` y esa ruta la sirve desde Drive. Al subirla se guarda
 el pais en la propiedad `mvInstagramCountry`. El publicador lee esa propiedad, asi que
-si el cron agarra el archivo antes que el generador, o si se reintenta, igual publica
-en la cuenta correcta. Un archivo sin esa propiedad (los que sube marketing a mano) va
-a la cuenta principal, como antes.
+si el cron agarra el archivo antes que el generador, o si se reintenta, la cuenta sale
+bien. Ojo: eso no evita que el cron y el generador publiquen el mismo archivo dos veces
+si coinciden en el mismo medio segundo; es un riesgo que ya existia antes de las
+cuentas por pais.
+
+Un archivo sin esa propiedad (los que sube marketing a mano) va a la cuenta principal,
+como antes. Un archivo con un valor que no es `PE`, `MX` ni `CO` no se publica: falla
+con error en vez de irse en silencio a la cuenta principal.
 
 ## Logs
 
-- `[Instagram] instagram_post_published country=.. mediaId=..` cada publicacion.
-- `[Instagram] instagram_account_missing country=..` cuando un archivo pide un pais sin
-  cuenta conectada.
-- `[Generator] instagram_post_rejected reason=account_missing country=..` cuando el
-  generador pide un pais sin cuenta (no se sube nada).
-- `[Generator] instagram_username_unresolved country=..` cuando Meta no devuelve el
-  usuario de una cuenta en el `GET`; suele ser un token vencido o de otra pagina.
+Mismo formato que el resto del repo: `[Modulo] Frase`, con el archivo y el pais.
+
+- `[Instagram] Publicado el archivo <fileId> en la cuenta de <pais>: media <mediaId>`
+  en cada publicacion, venga del generador o del cron.
+- `[Instagram] Sin cuenta de <pais> para publicar el archivo <fileId>` cuando un archivo
+  pide un pais sin cuenta conectada.
+- `[Instagram] El archivo <fileId> pide un pais desconocido: <valor>`.
+- `[Generator] Rechazado: no hay cuenta de Instagram de <pais>, no se subio nada a Drive`.
+- `[Generator] No se pudo publicar el archivo <fileId> en <canal> <pais>:` con el error
+  de Meta o de Drive. Despues de este log el archivo va a la papelera.
+- `[Generator] Meta no devolvio el usuario de Instagram de <pais>:` en el `GET`; suele ser
+  un token vencido o de otra pagina.
+
+## Tests
+
+`npm test` corre `test/` con el runner de Node. `test/instagramPublishing.test.ts`
+simula Meta reemplazando `fetch` y comprueba que un archivo de MX sale por la cuenta y
+el token de MX, que uno sin pais sale por la principal y que un pais sin cuenta o
+desconocido falla sin llamar a Meta. `test/support/resolveTs.mjs` deja que Node resuelva
+los imports `.js` del codigo a sus archivos `.ts`.

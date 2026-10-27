@@ -14,9 +14,12 @@ async function publishImageToFacebook(image: PendingImage): Promise<string> {
 }
 
 async function publishImageToInstagram(image: PendingImage, deadline: Deadline): Promise<string> {
-  const account = requireInstagramAccount(image.instagramCountry)
+  const account = requireInstagramAccount(image.id, image.storedInstagramCountry)
+  const mediaId = await publishToInstagram(buildSignedMediaUrl(image.id), image.caption, deadline, account)
 
-  return publishToInstagram(buildSignedMediaUrl(image.id), image.caption, deadline, account)
+  console.log(`[Instagram] Publicado el archivo ${image.id} en la cuenta de ${account.country}: media ${mediaId}`)
+
+  return mediaId
 }
 
 async function rejectUnapprovedTikTok(): Promise<string> {
