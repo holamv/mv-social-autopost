@@ -51,7 +51,7 @@ Ambas carpetas deben estar compartidas con `GOOGLE_CLIENT_EMAIL` con rol **Edito
 | `META_PAGE_ID` | si | `GET /me/accounts` |
 | `META_INSTAGRAM_USER_ID` | si | `GET /{META_PAGE_ID}?fields=instagram_business_account` |
 | `META_INSTAGRAM_COUNTRY` | no, default `PE` | Pais de la cuenta de `META_INSTAGRAM_USER_ID`: `PE`, `MX` o `CO` |
-| `META_INSTAGRAM_USER_ID_MX` / `_CO` / `_PE` | no | ID de la cuenta de Instagram Business de ese pais. Sin esta variable el generador no deja publicar en ese pais |
+| `META_INSTAGRAM_USER_ID_MX` / `_CO` / `_PE` | no | ID de la cuenta de Instagram Business de ese pais. Sin esta variable no se publica en ese pais, salvo el pais principal, que usa `META_INSTAGRAM_USER_ID`. Si se carga la del pais principal, pisa a la generica solo para publicar |
 | `META_GRAPH_ACCESS_TOKEN_MX` / `_CO` / `_PE` | no | Token de la pagina de Facebook vinculada a esa cuenta. Si falta se usa `META_GRAPH_ACCESS_TOKEN`, que solo sirve si es un token de usuario del sistema con acceso a las tres paginas |
 
 Las cuentas por pais solo las usa Instagram. Facebook y las metricas siguen en la

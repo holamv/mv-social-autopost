@@ -1,5 +1,3 @@
-import type { InstagramCountry } from './config/instagramAccounts.js'
-
 export interface ApiResponse<T> {
   success: boolean
   data: T
@@ -32,7 +30,7 @@ export interface PendingImage {
   linkedInMediaUrn: string | null
   webViewLink: string
   tikTokMessageId: string | null
-  instagramCountry: InstagramCountry | null
+  storedInstagramCountry: string | null
 }
 
 export interface PublishRoute {

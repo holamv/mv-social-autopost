@@ -9,15 +9,13 @@ import { resolveRoutes } from '../core/routes.js'
 import { getDriveClient } from '../drive/client.js'
 import { getPendingFile } from '../drive/listPending.js'
 import { uploadFile } from '../drive/upload.js'
-import { graphGet } from '../meta/client.js'
-import { instagramAccountFor } from '../meta/instagram.js'
+import { fetchInstagramUsername, instagramAccountFor } from '../meta/instagram.js'
 import type { ChannelPostIds, PublishRoute, RouteKey } from '../types.js'
 
 const GENERATOR_CHANNELS = ['instagram', 'linkedin'] as const
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png']
 const SOURCE_PROPERTY = { mvSource: 'generador-de-posts' }
 const FILE_EXTENSIONS: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png' }
-const USERNAME_FIELD = 'username'
 
 export type GeneratorChannel = (typeof GENERATOR_CHANNELS)[number]
 
@@ -43,9 +41,23 @@ export interface SubmissionResult {
   postIds: ChannelPostIds
 }
 
-interface InstagramAccountState {
+export interface InstagramAccountState {
   connected: boolean
   username: string | null
+}
+
+interface ChannelState {
+  enabled: boolean
+  reason: string | null
+}
+
+export interface GeneratorStatus {
+  instagram: ChannelState & {
+    country: InstagramCountry
+    username: string | null
+    accounts: Record<InstagramCountry, InstagramAccountState>
+  }
+  linkedin: ChannelState
 }
 
 async function routeFor(channel: GeneratorChannel): Promise<PublishRoute> {
@@ -70,14 +82,14 @@ function instagramCountryFor(submission: Submission): InstagramCountry | null {
   const country = submission.country ?? getEnv().META_INSTAGRAM_COUNTRY
 
   if (!instagramAccountFor(country)) {
-    console.warn(`[Generator] instagram_post_rejected reason=account_missing country=${country}`)
+    console.warn(`[Generator] Rechazado: no hay cuenta de Instagram de ${country}, no se subio nada a Drive`)
     throw new SubmissionError(`El autopost aun no tiene conectada la cuenta de Instagram de ${country}`, 409)
   }
 
   return country
 }
 
-function sourceProperties(country: InstagramCountry | null): Record<string, string> {
+export function sourceProperties(country: InstagramCountry | null): Record<string, string> {
   return country ? { ...SOURCE_PROPERTY, [INSTAGRAM_COUNTRY_KEY]: country } : SOURCE_PROPERTY
 }
 
@@ -123,6 +135,7 @@ export async function submitFromGenerator(submission: Submission): Promise<Submi
 
     return { fileId: uploaded.id, postIds: published.postIds }
   } catch (error) {
+    console.error(`[Generator] No se pudo publicar el archivo ${uploaded.id} en ${submission.channel} ${country ?? ''}:`, error)
     await discardFile(uploaded.id)
     throw error
   }
@@ -136,10 +149,9 @@ async function instagramAccountState(country: InstagramCountry): Promise<Instagr
   }
 
   try {
-    const profile = await graphGet<{ username?: string }>(account.userId, USERNAME_FIELD, account.accessToken)
-    return { connected: true, username: profile.username || null }
+    return { connected: true, username: await fetchInstagramUsername(account) }
   } catch (error) {
-    console.warn(`[Generator] instagram_username_unresolved country=${country}:`, error)
+    console.warn(`[Generator] Meta no devolvio el usuario de Instagram de ${country}:`, error)
     return { connected: true, username: null }
   }
 }
@@ -150,7 +162,7 @@ async function instagramAccountStates(): Promise<Record<InstagramCountry, Instag
   return Object.fromEntries(states) as Record<InstagramCountry, InstagramAccountState>
 }
 
-export async function generatorStatus(): Promise<Record<string, unknown>> {
+export async function generatorStatus(): Promise<GeneratorStatus> {
   const env = getEnv()
   const routes = await resolveRoutes()
   const channelState = (channel: GeneratorChannel) => {
