@@ -33,8 +33,12 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return payload
 }
 
-export async function graphPost<T>(path: string, params: Record<string, string>): Promise<T> {
-  const body = new URLSearchParams({ ...params, [ACCESS_TOKEN_PARAM]: getEnv().META_GRAPH_ACCESS_TOKEN })
+export async function graphPost<T>(
+  path: string,
+  params: Record<string, string>,
+  accessToken: string = getEnv().META_GRAPH_ACCESS_TOKEN,
+): Promise<T> {
+  const body = new URLSearchParams({ ...params, [ACCESS_TOKEN_PARAM]: accessToken })
   const response = await fetch(buildUrl(path), { method: HTTP_METHOD_POST, body })
 
   return parseResponse<T>(response)
@@ -48,11 +52,15 @@ export async function graphUpload<T>(path: string, form: FormData): Promise<T> {
   return parseResponse<T>(response)
 }
 
-export async function graphGet<T>(path: string, fields: string): Promise<T> {
+export async function graphGet<T>(
+  path: string,
+  fields: string,
+  accessToken: string = getEnv().META_GRAPH_ACCESS_TOKEN,
+): Promise<T> {
   const url = buildUrl(path)
 
   url.searchParams.set(FIELDS_PARAM, fields)
-  url.searchParams.set(ACCESS_TOKEN_PARAM, getEnv().META_GRAPH_ACCESS_TOKEN)
+  url.searchParams.set(ACCESS_TOKEN_PARAM, accessToken)
 
   const response = await fetch(url, { method: HTTP_METHOD_GET })
 

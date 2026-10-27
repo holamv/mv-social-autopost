@@ -318,6 +318,8 @@ Copiar `.env.example` a `.env.local` para desarrollo y cargarlas en Vercel en
 | `META_GRAPH_ACCESS_TOKEN` | Token de pagina de larga duracion |
 | `META_PAGE_ID` | ID de la pagina de Facebook |
 | `META_INSTAGRAM_USER_ID` | ID de la cuenta de Instagram Business |
+| `META_INSTAGRAM_USER_ID_MX`, `META_INSTAGRAM_USER_ID_CO` | Cuentas de Instagram de Mexico y Colombia para el generador (ver `docs/GENERATOR.md`) |
+| `META_GRAPH_ACCESS_TOKEN_MX`, `META_GRAPH_ACCESS_TOKEN_CO` | Token de la pagina de cada pais |
 | `PUBLIC_BASE_URL` | URL publica del deploy, ej. `https://mv-social-autopost.vercel.app` |
 | `MEDIA_SIGNING_SECRET` | Secreto para firmar las URLs de imagen |
 | `CRON_SECRET` | Secreto que Vercel manda para autorizar el cron |

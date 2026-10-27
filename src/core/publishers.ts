@@ -2,7 +2,7 @@ import type { Deadline } from './deadline.js'
 import { downloadImageToMemory } from '../drive/download.js'
 import { buildSignedMediaUrl } from '../lib/signedUrl.js'
 import { publishToFacebook } from '../meta/facebook.js'
-import { publishToInstagram } from '../meta/instagram.js'
+import { publishToInstagram, requireInstagramAccount } from '../meta/instagram.js'
 import { publishToLinkedIn } from '../linkedin/publish.js'
 import { publishToYouTube } from '../youtube/publish.js'
 import type { Channel, PendingImage } from '../types.js'
@@ -14,7 +14,9 @@ async function publishImageToFacebook(image: PendingImage): Promise<string> {
 }
 
 async function publishImageToInstagram(image: PendingImage, deadline: Deadline): Promise<string> {
-  return publishToInstagram(buildSignedMediaUrl(image.id), image.caption, deadline)
+  const account = requireInstagramAccount(image.instagramCountry)
+
+  return publishToInstagram(buildSignedMediaUrl(image.id), image.caption, deadline, account)
 }
 
 async function rejectUnapprovedTikTok(): Promise<string> {

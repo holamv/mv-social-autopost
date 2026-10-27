@@ -1,5 +1,6 @@
 import type { drive_v3 } from 'googleapis'
 import { getEnv } from '../config/env.js'
+import { toInstagramCountry } from '../config/instagramAccounts.js'
 import { getDriveClient } from './client.js'
 import { parseFileOrder, sortByOrder } from './ordering.js'
 import {
@@ -11,6 +12,7 @@ import {
   CHANNEL_POST_ID_KEYS,
   LINKEDIN_MEDIA_URN_KEY,
   TIKTOK_MESSAGE_ID_KEY,
+  INSTAGRAM_COUNTRY_KEY,
   LOCKED_AT_KEY,
   LOCK_TTL_MINUTES,
   MS_PER_SECOND,
@@ -69,6 +71,7 @@ function toPendingImage(file: drive_v3.Schema$File, defaultCaption: string): Pen
     linkedInMediaUrn: properties[LINKEDIN_MEDIA_URN_KEY] ?? null,
     webViewLink: file.webViewLink ?? '',
     tikTokMessageId: properties[TIKTOK_MESSAGE_ID_KEY] ?? null,
+    instagramCountry: toInstagramCountry(properties[INSTAGRAM_COUNTRY_KEY]),
   }
 }
 
