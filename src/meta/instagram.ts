@@ -41,7 +41,7 @@ export function instagramAccountFor(country: InstagramCountry): InstagramAccount
   return resolveInstagramAccount(getEnv(), country)
 }
 
-function countryOrFail(fileId: string, storedCountry: string | null): InstagramCountry {
+export function countryOrFail(fileId: string, storedCountry: string | null): InstagramCountry {
   if (storedCountry === null) {
     return getEnv().META_INSTAGRAM_COUNTRY
   }

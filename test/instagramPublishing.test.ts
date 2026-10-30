@@ -15,12 +15,21 @@ Object.assign(process.env, {
   META_INSTAGRAM_USER_ID: 'ig-main',
   META_INSTAGRAM_USER_ID_MX: 'ig-mexico',
   META_GRAPH_ACCESS_TOKEN_MX: MEXICO_TOKEN,
+  META_PAGE_ID_MX: 'page-mexico',
   PUBLIC_BASE_URL: 'https://autopost.example.com',
   MEDIA_SIGNING_SECRET: 'signing-secret',
   CRON_SECRET: 'cron-secret',
 })
 
-for (const name of ['META_INSTAGRAM_COUNTRY', 'META_INSTAGRAM_USER_ID_CO', 'META_INSTAGRAM_USER_ID_PE', 'META_GRAPH_ACCESS_TOKEN_CO', 'META_GRAPH_ACCESS_TOKEN_PE']) {
+for (const name of [
+  'META_INSTAGRAM_COUNTRY',
+  'META_INSTAGRAM_USER_ID_CO',
+  'META_INSTAGRAM_USER_ID_PE',
+  'META_GRAPH_ACCESS_TOKEN_CO',
+  'META_GRAPH_ACCESS_TOKEN_PE',
+  'META_PAGE_ID_CO',
+  'META_PAGE_ID_PE',
+]) {
   delete process.env[name]
 }
 
@@ -30,20 +39,36 @@ interface GraphCall {
 }
 
 const calls: GraphCall[] = []
+const graph = { rejectPhotos: false }
 
 function graphReply(path: string): Record<string, string> {
   if (path.endsWith('/media_publish')) {
     return { id: 'media-published' }
   }
 
+  if (path.endsWith('/photos')) {
+    return { id: 'photo', post_id: 'page-post' }
+  }
+
   return path.endsWith('/media') ? { id: 'container' } : { status_code: 'FINISHED', username: 'manzanaverde' }
+}
+
+function requestToken(url: URL, init?: RequestInit): string | null {
+  if (init?.body instanceof FormData) {
+    return String(init.body.get('access_token'))
+  }
+
+  return url.searchParams.get('access_token') ?? new URLSearchParams(String(init?.body ?? '')).get('access_token')
 }
 
 globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
   const url = new URL(String(input))
-  const token = url.searchParams.get('access_token') ?? new URLSearchParams(String(init?.body ?? '')).get('access_token')
 
-  calls.push({ path: url.pathname, token })
+  calls.push({ path: url.pathname, token: requestToken(url, init) })
+
+  if (graph.rejectPhotos && url.pathname.endsWith('/photos')) {
+    return new Response(JSON.stringify({ error: { message: 'Meta rechazo la foto' } }), { status: 400 })
+  }
 
   return new Response(JSON.stringify(graphReply(url.pathname)))
 }) as typeof fetch
@@ -51,6 +76,7 @@ globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
 const { CHANNEL_PUBLISHERS } = await import('../src/core/publishers.ts')
 const { graphGet } = await import('../src/meta/client.ts')
 const { SubmissionError, sourceProperties, submitFromGenerator } = await import('../src/generator/submit.ts')
+const { mirrorToFacebook } = await import('../src/generator/facebookMirror.ts')
 const { toPendingImage } = await import('../src/drive/listPending.ts')
 
 const deadline = { remainingMs: () => ENOUGH_TIME_MS, isExpired: () => false }
@@ -124,6 +150,61 @@ describe('country round trip through the Drive file', () => {
     await CHANNEL_PUBLISHERS.instagram(uploadedFile(null), deadline)
     assert.ok(calls[0]?.path.endsWith('/ig-main/media'))
     assert.ok(calls.every((call) => call.token === MAIN_TOKEN))
+  })
+})
+
+describe('Facebook copy of a generator post', () => {
+  const media = { fileId: 'file-3', name: 'post.jpg', mimeType: 'image/jpeg', sizeBytes: 1, buffer: Buffer.from('A') }
+
+  beforeEach(() => {
+    calls.length = 0
+    graph.rejectPhotos = false
+  })
+
+  it('publishes the Mexico copy on the Mexico page with the Mexico token', async () => {
+    assert.equal(await mirrorToFacebook(media, 'Hola', 'MX', deadline), 'page-post')
+    assert.ok(calls[0]?.path.endsWith('/page-mexico/photos'))
+    assert.equal(calls[0]?.token, MEXICO_TOKEN)
+  })
+
+  it('publishes the Peru copy on the main page with the main token', async () => {
+    assert.equal(await mirrorToFacebook(media, 'Hola', 'PE', deadline), 'page-post')
+    assert.ok(calls[0]?.path.endsWith('/page-main/photos'))
+    assert.equal(calls[0]?.token, MAIN_TOKEN)
+  })
+
+  it('skips without calling Meta when the country has no Facebook page', async () => {
+    assert.equal(await mirrorToFacebook(media, 'Hola', 'CO', deadline), null)
+    assert.equal(calls.length, 0)
+  })
+
+  it('skips without calling Meta when Instagram used up the time budget', async () => {
+    const expired = { remainingMs: () => 0, isExpired: () => true }
+
+    assert.equal(await mirrorToFacebook(media, 'Hola', 'MX', expired), null)
+    assert.equal(calls.length, 0)
+  })
+
+  it('returns null instead of failing when Meta rejects the copy', async () => {
+    graph.rejectPhotos = true
+    assert.equal(await mirrorToFacebook(media, 'Hola', 'MX', deadline), null)
+    assert.equal(calls.length, 1)
+  })
+})
+
+describe('Facebook publishing by country', () => {
+  beforeEach(() => {
+    calls.length = 0
+  })
+
+  it('fails without calling Meta or Drive when the country has no Facebook page', async () => {
+    await assert.rejects(CHANNEL_PUBLISHERS.facebook(pendingImage('CO'), deadline), /META_PAGE_ID_CO/)
+    assert.equal(calls.length, 0)
+  })
+
+  it('fails without calling Meta or Drive when the stored country is unknown', async () => {
+    await assert.rejects(CHANNEL_PUBLISHERS.facebook(pendingImage('AR'), deadline), /AR/)
+    assert.equal(calls.length, 0)
   })
 })
 

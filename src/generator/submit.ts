@@ -3,14 +3,15 @@ import { z } from 'zod'
 import { getEnv } from '../config/env.js'
 import { BYTES_PER_MEGABYTE, INSTAGRAM_COUNTRY_KEY, MAX_IMAGE_MEGABYTES } from '../config/constants.js'
 import { INSTAGRAM_COUNTRIES, type InstagramCountry } from '../config/instagramAccounts.js'
-import { createDeadline } from '../core/deadline.js'
+import { createDeadline, type Deadline } from '../core/deadline.js'
 import { publishImage } from '../core/pipeline.js'
 import { resolveRoutes } from '../core/routes.js'
 import { getDriveClient } from '../drive/client.js'
 import { getPendingFile } from '../drive/listPending.js'
 import { uploadFile } from '../drive/upload.js'
 import { fetchInstagramUsername, instagramAccountFor } from '../meta/instagram.js'
-import type { ChannelPostIds, PublishRoute, RouteKey } from '../types.js'
+import { mirrorToFacebook, rememberFacebookPost } from './facebookMirror.js'
+import type { ChannelPostIds, PublishRoute, PublishedImage, RouteKey } from '../types.js'
 
 const GENERATOR_CHANNELS = ['instagram', 'linkedin'] as const
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png']
@@ -111,34 +112,71 @@ async function discardFile(fileId: string): Promise<void> {
   }
 }
 
-export async function submitFromGenerator(submission: Submission): Promise<SubmissionResult> {
-  const country = instagramCountryFor(submission)
-  const route = await routeFor(submission.channel)
-  const extension = FILE_EXTENSIONS[submission.mimeType]
-  const uploaded = await uploadFile({
-    folderId: route.sourceFolderId,
-    name: `generador-${new Date().toISOString().replace(/[:.]/g, '-')}.${extension}`,
-    mimeType: submission.mimeType,
-    body: Readable.from(decodeMedia(submission)),
-    appProperties: sourceProperties(country),
-    description: submission.caption,
-  })
+function generatorFileName(mimeType: string): string {
+  return `generador-${new Date().toISOString().replace(/[:.]/g, '-')}.${FILE_EXTENSIONS[mimeType]}`
+}
 
+interface UploadedSubmission {
+  fileId: string
+  name: string
+  media: Buffer
+  submission: Submission
+  country: InstagramCountry | null
+  deadline: Deadline
+}
+
+async function publishUploaded({ fileId, submission, country, deadline }: UploadedSubmission, route: PublishRoute): Promise<PublishedImage> {
   try {
-    const pending = await getPendingFile(uploaded.id)
+    const pending = await getPendingFile(fileId)
 
     if (!pending) {
       throw new SubmissionError('El archivo subido ya figuraba como publicado', 409)
     }
 
-    const published = await publishImage(pending, route, createDeadline())
-
-    return { fileId: uploaded.id, postIds: published.postIds }
+    return await publishImage(pending, route, deadline)
   } catch (error) {
-    console.error(`[Generator] No se pudo publicar el archivo ${uploaded.id} en ${submission.channel} ${country ?? ''}:`, error)
-    await discardFile(uploaded.id)
+    console.error(`[Generator] No se pudo publicar el archivo ${fileId} en ${submission.channel} ${country ?? ''}:`, error)
+    await discardFile(fileId)
     throw error
   }
+}
+
+async function copyToFacebook({ fileId, name, media, submission, country, deadline }: UploadedSubmission): Promise<ChannelPostIds> {
+  if (!country) {
+    return {}
+  }
+
+  const image = { fileId, name, mimeType: submission.mimeType, sizeBytes: media.length, buffer: media }
+  const postId = await mirrorToFacebook(image, submission.caption, country, deadline)
+
+  if (!postId) {
+    return {}
+  }
+
+  await rememberFacebookPost(fileId, postId)
+
+  return { facebook: postId }
+}
+
+export async function submitFromGenerator(submission: Submission): Promise<SubmissionResult> {
+  const country = instagramCountryFor(submission)
+  const route = await routeFor(submission.channel)
+  const media = decodeMedia(submission)
+  const name = generatorFileName(submission.mimeType)
+  const uploaded = await uploadFile({
+    folderId: route.sourceFolderId,
+    name,
+    mimeType: submission.mimeType,
+    body: Readable.from(media),
+    appProperties: sourceProperties(country),
+    description: submission.caption,
+  })
+
+  const target = { fileId: uploaded.id, name, media, submission, country, deadline: createDeadline() }
+  const published = await publishUploaded(target, route)
+  const mirrored = await copyToFacebook(target)
+
+  return { fileId: uploaded.id, postIds: { ...published.postIds, ...mirrored } }
 }
 
 async function instagramAccountState(country: InstagramCountry): Promise<InstagramAccountState> {

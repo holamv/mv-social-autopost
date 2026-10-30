@@ -41,7 +41,8 @@ tokens de Meta: su backend reenvia el pedido con `GENERATOR_API_TOKEN`.
 - `POST` publica. Cuerpo: `channel` (`instagram` o `linkedin`), `country` (`PE`, `MX`
   o `CO`, solo Instagram; si falta se usa `META_INSTAGRAM_COUNTRY`), `caption`,
   `mimeType` (`image/jpeg` o `image/png`) y `dataBase64`. Si el pais no tiene cuenta
-  conectada responde `409` sin subir nada a Drive.
+  conectada responde `409` sin subir nada a Drive. La respuesta trae `postIds.instagram`
+  y, si la copia a Facebook salio, `postIds.facebook` (ver abajo).
 
 ## Una cuenta de Instagram por pais
 
@@ -62,8 +63,43 @@ un token de pagina Meta rechaza la publicacion y el error vuelve al generador.
 El pais principal tambien acepta `META_INSTAGRAM_USER_ID_PE` y
 `META_GRAPH_ACCESS_TOKEN_PE` (o el sufijo que corresponda). Si se cargan, **pisan** a
 las genericas solo para publicar en Instagram; Facebook y `/api/metrics` siguen
-usando `META_INSTAGRAM_USER_ID` y `META_GRAPH_ACCESS_TOKEN`. Lo normal es no cargarlas:
+usando `META_PAGE_ID` y `META_GRAPH_ACCESS_TOKEN`. Lo normal es no cargarlas:
 si apuntan a otra cuenta, se publica en una y se miden metricas de otra.
+
+## Copia en Facebook de lo que se publica en Instagram
+
+Cuando el generador publica en Instagram, el autopost sube la misma imagen con el
+mismo texto a la pagina de Facebook de ese pais.
+
+**Por que.** Instagram solo comparte en Facebook lo que se publica desde su app. Lo
+que entra por la API no se comparte, aunque la cuenta tenga activado "compartir en
+Facebook". Se comprobo el 30/10/2026 cruzando cada post con su archivo `generador-*`
+en Drive: entre el 19 y el 29/10 ninguna imagen del generador llego a Facebook (Peru,
+Mexico y la unica de Colombia), y los posts de Colombia hechos desde la app si
+llegaron. El KPI 693 cuenta Facebook por separado, asi que esas piezas no contaban.
+
+**Que pagina.** `META_PAGE_ID_<pais>` con `META_GRAPH_ACCESS_TOKEN_<pais>`. El pais
+principal, si no tiene la suya, usa `META_PAGE_ID` y `META_GRAPH_ACCESS_TOKEN`, que es
+la misma pagina que ya usaba Facebook. Un pais sin pagina configurada queda solo en
+Instagram y lo dice el log. El token necesita `pages_manage_posts`; los tokens de
+pagina de las tres cuentas lo tienen.
+
+| Pais | Pagina | Token |
+|---|---|---|
+| El de `META_INSTAGRAM_COUNTRY` (default `PE`) | `META_PAGE_ID` | `META_GRAPH_ACCESS_TOKEN` |
+| `MX` | `META_PAGE_ID_MX` | `META_GRAPH_ACCESS_TOKEN_MX` |
+| `CO` | `META_PAGE_ID_CO` | `META_GRAPH_ACCESS_TOKEN_CO` |
+
+**Si Facebook falla, Instagram no se deshace.** La copia corre despues de que
+Instagram publico y de que el archivo quedo marcado. Si Meta la rechaza o no hay
+pagina, el generador igual responde exito sin `postIds.facebook`, y el archivo no va a
+la papelera: tirarlo invitaria a reintentar y duplicar el post de Instagram. La copia
+no se reintenta sola; se busca en el log y se sube a mano.
+
+Solo aplica al generador. Las carpetas de Drive no cambian: la raiz publica en
+Facebook e Instagram, `Facebook/` y `Instagram/` publican solo en esa red. El
+publicador de Facebook del cron ahora tambien lee el pais del archivo, pero los
+archivos de marketing no lo tienen y siguen yendo a la pagina principal.
 
 Para sacar los valores de Mexico o Colombia se repiten los pasos de la seccion 2 del
 README con un usuario que administre esa pagina: `GET /me/accounts` da el
@@ -103,6 +139,18 @@ Mismo formato que el resto del repo: `[Modulo] Frase`, con el archivo y el pais.
   de Meta o de Drive. Despues de este log el archivo va a la papelera.
 - `[Generator] Meta no devolvio el usuario de Instagram de <pais>:` en el `GET`; suele ser
   un token vencido o de otra pagina.
+- `[Facebook] Publicado el archivo <fileId> en la pagina de <pais>: post <postId>` en
+  cada publicacion en Facebook, sea la copia del generador o el cron.
+- `[Facebook] Sin pagina de <pais> para publicar el archivo <fileId>` cuando el cron
+  agarra un archivo de un pais sin pagina.
+- `[Generator] Sin pagina de Facebook de <pais>: el archivo <fileId> quedo solo en Instagram`.
+- `[Generator] Sin tiempo para copiar a Facebook de <pais> el archivo <fileId>: quedo solo en Instagram`
+  cuando Instagram consumio el presupuesto de la funcion. Se salta la copia para que el
+  corte de Vercel no deje al generador sin respuesta y alguien reintente Instagram.
+- `[Generator] Instagram publico el archivo <fileId> pero Facebook de <pais> fallo:` con el
+  error de Meta. Es la copia que hay que subir a mano.
+- `[Generator] Facebook publico el archivo <fileId> (post <postId>) pero no se guardo el id en Drive:`.
+  Los dos posts estan arriba; solo falta `mvFacebookPostId` en el archivo.
 
 ## Tests
 
@@ -112,6 +160,11 @@ el token de MX, que uno sin pais sale por la principal y que un pais sin cuenta 
 desconocido falla sin llamar a Meta. Tambien hace la ida y vuelta completa: las
 propiedades que escribe el generador (`sourceProperties`) se leen como las lee el cron
 (`toPendingImage`) y el post sale por la cuenta de ese pais.
+
+La copia a Facebook se prueba igual: la de MX sale por la pagina y el token de MX, la
+de PE por la pagina principal, un pais sin pagina o sin tiempo no llama a Meta y un
+rechazo de Meta devuelve `null` sin tirar error. `test/facebookPages.test.ts` cubre como se elige la
+pagina de cada pais.
 
 `test/support/resolveTs.mjs` deja que Node resuelva los imports `.js` del codigo a sus
 archivos `.ts`. Usa `module.registerHooks`, asi que `npm test` necesita Node 22.15 o

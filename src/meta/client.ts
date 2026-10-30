@@ -44,8 +44,12 @@ export async function graphPost<T>(
   return parseResponse<T>(response)
 }
 
-export async function graphUpload<T>(path: string, form: FormData): Promise<T> {
-  form.append(ACCESS_TOKEN_PARAM, getEnv().META_GRAPH_ACCESS_TOKEN)
+export async function graphUpload<T>(
+  path: string,
+  form: FormData,
+  accessToken: string = getEnv().META_GRAPH_ACCESS_TOKEN,
+): Promise<T> {
+  form.append(ACCESS_TOKEN_PARAM, accessToken)
 
   const response = await fetch(buildUrl(path), { method: HTTP_METHOD_POST, body: form })
 
