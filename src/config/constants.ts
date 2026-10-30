@@ -67,6 +67,7 @@ export const INSTAGRAM_STATUS_FINISHED = 'FINISHED'
 export const INSTAGRAM_STATUS_ERROR = 'ERROR'
 export const INSTAGRAM_POLL_ATTEMPTS = 12
 export const INSTAGRAM_POLL_DELAY_MS = 4000
+export const FACEBOOK_COPY_MIN_REMAINING_MS = 15000
 
 export const MEDIA_ROUTE = '/api/media'
 export const MEDIA_FILE_PARAM = 'file'

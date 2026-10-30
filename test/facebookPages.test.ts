@@ -38,19 +38,24 @@ describe('resolveFacebookPage', () => {
     assert.equal(resolveFacebookPage(variables, 'CO')?.accessToken, 'token-peru')
   })
 
-  it('keeps the main page and token for the main country even if its country token is set', () => {
-    const variables = { ...MAIN_PAGE, META_GRAPH_ACCESS_TOKEN_PE: 'token-instagram-only' }
-
-    assert.equal(resolveFacebookPage(variables, 'PE')?.accessToken, 'token-peru')
-  })
-
-  it('lets the country page override the main page for the main country', () => {
-    const variables = { ...MAIN_PAGE, META_PAGE_ID_PE: 'page-peru-new', META_GRAPH_ACCESS_TOKEN_PE: 'token-peru-new' }
+  it('keeps the main page and token for the main country even if its country variables are set', () => {
+    const variables = { ...MAIN_PAGE, META_PAGE_ID_PE: 'page-peru-other', META_GRAPH_ACCESS_TOKEN_PE: 'token-instagram-only' }
 
     assert.deepEqual(resolveFacebookPage(variables, 'PE'), {
       country: 'PE',
-      pageId: 'page-peru-new',
-      accessToken: 'token-peru-new',
+      pageId: 'page-peru',
+      accessToken: 'token-peru',
     })
+  })
+
+  it('uses the country variables for Peru when the main country is another one', () => {
+    const variables = { ...MAIN_PAGE, META_INSTAGRAM_COUNTRY: 'MX', META_PAGE_ID_PE: 'page-peru-own', META_GRAPH_ACCESS_TOKEN_PE: 'token-peru-own' } as const
+
+    assert.deepEqual(resolveFacebookPage(variables, 'PE'), {
+      country: 'PE',
+      pageId: 'page-peru-own',
+      accessToken: 'token-peru-own',
+    })
+    assert.equal(resolveFacebookPage(variables, 'MX')?.pageId, 'page-peru')
   })
 })

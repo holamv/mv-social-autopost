@@ -1,3 +1,4 @@
+import { FACEBOOK_COPY_MIN_REMAINING_MS } from '../config/constants.js'
 import type { InstagramCountry } from '../config/instagramAccounts.js'
 import type { Deadline } from '../core/deadline.js'
 import { storeChannelPostId } from '../drive/marking.js'
@@ -19,13 +20,15 @@ export async function mirrorToFacebook(
     return null
   }
 
-  if (deadline.isExpired()) {
+  const remainingMs = deadline.remainingMs()
+
+  if (remainingMs < FACEBOOK_COPY_MIN_REMAINING_MS) {
     console.warn(`[Generator] Sin tiempo para copiar a Facebook de ${country} el archivo ${media.fileId}: quedo solo en Instagram`)
     return null
   }
 
   try {
-    const postId = await publishToFacebook(media, caption, page)
+    const postId = await publishToFacebook(media, caption, page, remainingMs)
 
     console.log(`[Facebook] Publicado el archivo ${media.fileId} en la pagina de ${country}: post ${postId}`)
 

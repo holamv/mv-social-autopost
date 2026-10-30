@@ -13,19 +13,19 @@ export type FacebookPageVariables = Pick<Env, 'META_INSTAGRAM_COUNTRY' | 'META_P
   Partial<Record<CountryVariable, string>>
 
 export function resolveFacebookPage(variables: FacebookPageVariables, country: InstagramCountry): FacebookPage | null {
-  const countryPageId = variables[`META_PAGE_ID_${country}`]
-
-  if (countryPageId) {
-    return {
-      country,
-      pageId: countryPageId,
-      accessToken: variables[`META_GRAPH_ACCESS_TOKEN_${country}`] ?? variables.META_GRAPH_ACCESS_TOKEN,
-    }
+  if (country === variables.META_INSTAGRAM_COUNTRY) {
+    return { country, pageId: variables.META_PAGE_ID, accessToken: variables.META_GRAPH_ACCESS_TOKEN }
   }
 
-  if (country !== variables.META_INSTAGRAM_COUNTRY) {
+  const countryPageId = variables[`META_PAGE_ID_${country}`]
+
+  if (!countryPageId) {
     return null
   }
 
-  return { country, pageId: variables.META_PAGE_ID, accessToken: variables.META_GRAPH_ACCESS_TOKEN }
+  return {
+    country,
+    pageId: countryPageId,
+    accessToken: variables[`META_GRAPH_ACCESS_TOKEN_${country}`] ?? variables.META_GRAPH_ACCESS_TOKEN,
+  }
 }

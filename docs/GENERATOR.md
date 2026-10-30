@@ -66,6 +66,11 @@ las genericas solo para publicar en Instagram; Facebook y `/api/metrics` siguen
 usando `META_PAGE_ID` y `META_GRAPH_ACCESS_TOKEN`. Lo normal es no cargarlas:
 si apuntan a otra cuenta, se publica en una y se miden metricas de otra.
 
+Para sacar los valores de Mexico o Colombia se repiten los pasos de la seccion 2 del
+README con un usuario que administre esa pagina: `GET /me/accounts` da el
+`access_token` de la pagina y `GET /{page-id}?fields=instagram_business_account` da el
+ID de la cuenta. Despues de cargarlos en Vercel hay que redeployar.
+
 ## Copia en Facebook de lo que se publica en Instagram
 
 Cuando el generador publica en Instagram, el autopost sube la misma imagen con el
@@ -78,9 +83,12 @@ en Drive: entre el 19 y el 29/10 ninguna imagen del generador llego a Facebook (
 Mexico y la unica de Colombia), y los posts de Colombia hechos desde la app si
 llegaron. El KPI 693 cuenta Facebook por separado, asi que esas piezas no contaban.
 
-**Que pagina.** `META_PAGE_ID_<pais>` con `META_GRAPH_ACCESS_TOKEN_<pais>`. El pais
-principal, si no tiene la suya, usa `META_PAGE_ID` y `META_GRAPH_ACCESS_TOKEN`, que es
-la misma pagina que ya usaba Facebook. Un pais sin pagina configurada queda solo en
+**Que pagina.** El pais principal usa siempre `META_PAGE_ID` y
+`META_GRAPH_ACCESS_TOKEN`, la misma pagina que ya usaban el cron y `/api/metrics`,
+aunque se cargue `META_PAGE_ID_<pais principal>`: asi una variable de mas no manda el
+Facebook del cron a otra pagina ni lo publica con un token que quiza solo sirve para
+Instagram. Los demas paises usan `META_PAGE_ID_<pais>` con
+`META_GRAPH_ACCESS_TOKEN_<pais>`. Un pais sin pagina configurada queda solo en
 Instagram y lo dice el log. El token necesita `pages_manage_posts`; los tokens de
 pagina de las tres cuentas lo tienen.
 
@@ -90,21 +98,26 @@ pagina de las tres cuentas lo tienen.
 | `MX` | `META_PAGE_ID_MX` | `META_GRAPH_ACCESS_TOKEN_MX` |
 | `CO` | `META_PAGE_ID_CO` | `META_GRAPH_ACCESS_TOKEN_CO` |
 
-**Si Facebook falla, Instagram no se deshace.** La copia corre despues de que
-Instagram publico y de que el archivo quedo marcado. Si Meta la rechaza o no hay
-pagina, el generador igual responde exito sin `postIds.facebook`, y el archivo no va a
-la papelera: tirarlo invitaria a reintentar y duplicar el post de Instagram. La copia
-no se reintenta sola; se busca en el log y se sube a mano.
+**Si Facebook falla, Instagram no se deshace.** `src/generator/publishFlow.ts` fija el
+orden: primero Instagram, y si eso falla el archivo va a la papelera y el error vuelve
+al generador; recien despues la copia, que nunca hace fallar la respuesta. Si Meta la
+rechaza, no hay pagina o no queda tiempo, el generador responde exito sin
+`postIds.facebook` y el archivo no va a la papelera: tirarlo invitaria a reintentar y
+duplicar el post de Instagram. La copia no se reintenta sola; se busca en el log y se
+sube a mano.
+
+**Tiempo.** El plazo de la funcion (100 s de los 120 de Vercel) arranca antes de subir
+el archivo a Drive y lo comparten Instagram y la copia. La copia solo arranca si
+quedan al menos 15 s (`FACEBOOK_COPY_MIN_REMAINING_MS`), y la subida a Facebook se
+corta cuando se acaba el plazo. Asi Vercel nunca corta la funcion a mitad de la copia:
+si lo hiciera, el generador mostraria error con Instagram ya publicado y la persona
+reintentaria. Si la subida se corta por tiempo, Meta pudo haberla recibido igual: antes
+de subirla a mano, mirar la pagina.
 
 Solo aplica al generador. Las carpetas de Drive no cambian: la raiz publica en
 Facebook e Instagram, `Facebook/` y `Instagram/` publican solo en esa red. El
 publicador de Facebook del cron ahora tambien lee el pais del archivo, pero los
 archivos de marketing no lo tienen y siguen yendo a la pagina principal.
-
-Para sacar los valores de Mexico o Colombia se repiten los pasos de la seccion 2 del
-README con un usuario que administre esa pagina: `GET /me/accounts` da el
-`access_token` de la pagina y `GET /{page-id}?fields=instagram_business_account` da el
-ID de la cuenta. Despues de cargarlos en Vercel hay que redeployar.
 
 ## Por que el pais viaja en el archivo de Drive
 
@@ -133,7 +146,8 @@ Mismo formato que el resto del repo: `[Modulo] Frase`, con el archivo y el pais.
   en cada publicacion, venga del generador o del cron.
 - `[Instagram] Sin cuenta de <pais> para publicar el archivo <fileId>` cuando un archivo
   pide un pais sin cuenta conectada.
-- `[Instagram] El archivo <fileId> pide un pais desconocido: <valor>`.
+- `[Instagram] El archivo <fileId> pide un pais desconocido: <valor>`, o `[Facebook]` si
+  el que lo lee es el publicador de Facebook.
 - `[Generator] Rechazado: no hay cuenta de Instagram de <pais>, no se subio nada a Drive`.
 - `[Generator] No se pudo publicar el archivo <fileId> en <canal> <pais>:` con el error
   de Meta o de Drive. Despues de este log el archivo va a la papelera.
@@ -145,8 +159,11 @@ Mismo formato que el resto del repo: `[Modulo] Frase`, con el archivo y el pais.
   agarra un archivo de un pais sin pagina.
 - `[Generator] Sin pagina de Facebook de <pais>: el archivo <fileId> quedo solo en Instagram`.
 - `[Generator] Sin tiempo para copiar a Facebook de <pais> el archivo <fileId>: quedo solo en Instagram`
-  cuando Instagram consumio el presupuesto de la funcion. Se salta la copia para que el
-  corte de Vercel no deje al generador sin respuesta y alguien reintente Instagram.
+  cuando quedan menos de 15 s del plazo. Se salta la copia para que el corte de Vercel
+  no deje al generador sin respuesta y alguien reintente Instagram.
+- `[Generator] El archivo <fileId> ya estaba publicado y la copia fallo; se responde exito igual:`
+  si algo de la copia tiro un error que no esperaba. No deberia pasar: la copia atrapa
+  sus propios errores. Es la red de `publishFlow.ts`.
 - `[Generator] Instagram publico el archivo <fileId> pero Facebook de <pais> fallo:` con el
   error de Meta. Es la copia que hay que subir a mano.
 - `[Generator] Facebook publico el archivo <fileId> (post <postId>) pero no se guardo el id en Drive:`.
@@ -161,10 +178,14 @@ desconocido falla sin llamar a Meta. Tambien hace la ida y vuelta completa: las
 propiedades que escribe el generador (`sourceProperties`) se leen como las lee el cron
 (`toPendingImage`) y el post sale por la cuenta de ese pais.
 
-La copia a Facebook se prueba igual: la de MX sale por la pagina y el token de MX, la
-de PE por la pagina principal, un pais sin pagina o sin tiempo no llama a Meta y un
-rechazo de Meta devuelve `null` sin tirar error. `test/facebookPages.test.ts` cubre como se elige la
-pagina de cada pais.
+La copia a Facebook se prueba igual: la de MX sale por la pagina y el token de MX con
+un tiempo maximo, la de PE por la pagina principal, un pais sin pagina, sin tiempo o
+con menos de 15 s no llama a Meta, un rechazo de Meta devuelve `null` sin tirar error y
+un post de LinkedIn no se copia. `test/facebookPages.test.ts` cubre como se elige la
+pagina de cada pais. `test/publishFlow.test.ts` cubre el orden: la copia va despues de
+publicar, un error en la copia no tira el archivo ni la respuesta, y si Instagram
+falla el archivo va a la papelera sin copiar. Lo que toca Drive no se observa en los
+tests: googleapis no pasa por el `fetch` que reemplazan.
 
 `test/support/resolveTs.mjs` deja que Node resuelva los imports `.js` del codigo a sus
 archivos `.ts`. Usa `module.registerHooks`, asi que `npm test` necesita Node 22.15 o

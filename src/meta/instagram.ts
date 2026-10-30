@@ -1,12 +1,8 @@
 import { getEnv } from '../config/env.js'
-import {
-  resolveInstagramAccount,
-  toInstagramCountry,
-  type InstagramAccount,
-  type InstagramCountry,
-} from '../config/instagramAccounts.js'
+import { resolveInstagramAccount, type InstagramAccount, type InstagramCountry } from '../config/instagramAccounts.js'
 import type { Deadline } from '../core/deadline.js'
 import { graphGet, graphPost, MetaApiError } from './client.js'
+import { countryOrFail } from './fileCountry.js'
 import {
   GRAPH_MEDIA_EDGE,
   GRAPH_MEDIA_PUBLISH_EDGE,
@@ -22,6 +18,7 @@ const IMAGE_URL_PARAM = 'image_url'
 const CAPTION_PARAM = 'caption'
 const CREATION_ID_PARAM = 'creation_id'
 const USERNAME_FIELD = 'username'
+const INSTAGRAM_LOG_LABEL = 'Instagram'
 
 interface ContainerResponse {
   id: string
@@ -41,23 +38,8 @@ export function instagramAccountFor(country: InstagramCountry): InstagramAccount
   return resolveInstagramAccount(getEnv(), country)
 }
 
-export function countryOrFail(fileId: string, storedCountry: string | null): InstagramCountry {
-  if (storedCountry === null) {
-    return getEnv().META_INSTAGRAM_COUNTRY
-  }
-
-  const country = toInstagramCountry(storedCountry)
-
-  if (!country) {
-    console.warn(`[Instagram] El archivo ${fileId} pide un pais desconocido: ${storedCountry}`)
-    throw new MetaApiError(`El archivo pide el pais de Instagram "${storedCountry}", que el autopost no conoce`, HTTP_INTERNAL_ERROR)
-  }
-
-  return country
-}
-
 export function requireInstagramAccount(fileId: string, storedCountry: string | null): InstagramAccount {
-  const country = countryOrFail(fileId, storedCountry)
+  const country = countryOrFail(fileId, storedCountry, INSTAGRAM_LOG_LABEL)
   const account = instagramAccountFor(country)
 
   if (!account) {

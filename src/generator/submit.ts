@@ -11,6 +11,7 @@ import { getPendingFile } from '../drive/listPending.js'
 import { uploadFile } from '../drive/upload.js'
 import { fetchInstagramUsername, instagramAccountFor } from '../meta/instagram.js'
 import { mirrorToFacebook, rememberFacebookPost } from './facebookMirror.js'
+import { publishThenCopy } from './publishFlow.js'
 import type { ChannelPostIds, PublishRoute, PublishedImage, RouteKey } from '../types.js'
 
 const GENERATOR_CHANNELS = ['instagram', 'linkedin'] as const
@@ -116,7 +117,7 @@ function generatorFileName(mimeType: string): string {
   return `generador-${new Date().toISOString().replace(/[:.]/g, '-')}.${FILE_EXTENSIONS[mimeType]}`
 }
 
-interface UploadedSubmission {
+export interface UploadedSubmission {
   fileId: string
   name: string
   media: Buffer
@@ -125,23 +126,22 @@ interface UploadedSubmission {
   deadline: Deadline
 }
 
-async function publishUploaded({ fileId, submission, country, deadline }: UploadedSubmission, route: PublishRoute): Promise<PublishedImage> {
-  try {
-    const pending = await getPendingFile(fileId)
+async function publishUploaded({ fileId, deadline }: UploadedSubmission, route: PublishRoute): Promise<PublishedImage> {
+  const pending = await getPendingFile(fileId)
 
-    if (!pending) {
-      throw new SubmissionError('El archivo subido ya figuraba como publicado', 409)
-    }
-
-    return await publishImage(pending, route, deadline)
-  } catch (error) {
-    console.error(`[Generator] No se pudo publicar el archivo ${fileId} en ${submission.channel} ${country ?? ''}:`, error)
-    await discardFile(fileId)
-    throw error
+  if (!pending) {
+    throw new SubmissionError('El archivo subido ya figuraba como publicado', 409)
   }
+
+  return publishImage(pending, route, deadline)
 }
 
-async function copyToFacebook({ fileId, name, media, submission, country, deadline }: UploadedSubmission): Promise<ChannelPostIds> {
+async function discardAfterFailure({ fileId, submission, country }: UploadedSubmission, error: unknown): Promise<void> {
+  console.error(`[Generator] No se pudo publicar el archivo ${fileId} en ${submission.channel} ${country ?? ''}:`, error)
+  await discardFile(fileId)
+}
+
+export async function copyToFacebook({ fileId, name, media, submission, country, deadline }: UploadedSubmission): Promise<ChannelPostIds> {
   if (!country) {
     return {}
   }
@@ -159,6 +159,7 @@ async function copyToFacebook({ fileId, name, media, submission, country, deadli
 }
 
 export async function submitFromGenerator(submission: Submission): Promise<SubmissionResult> {
+  const deadline = createDeadline()
   const country = instagramCountryFor(submission)
   const route = await routeFor(submission.channel)
   const media = decodeMedia(submission)
@@ -172,11 +173,15 @@ export async function submitFromGenerator(submission: Submission): Promise<Submi
     description: submission.caption,
   })
 
-  const target = { fileId: uploaded.id, name, media, submission, country, deadline: createDeadline() }
-  const published = await publishUploaded(target, route)
-  const mirrored = await copyToFacebook(target)
+  const target = { fileId: uploaded.id, name, media, submission, country, deadline }
+  const postIds = await publishThenCopy({
+    fileId: uploaded.id,
+    publish: () => publishUploaded(target, route),
+    discard: (error) => discardAfterFailure(target, error),
+    copy: () => copyToFacebook(target),
+  })
 
-  return { fileId: uploaded.id, postIds: { ...published.postIds, ...mirrored } }
+  return { fileId: uploaded.id, postIds }
 }
 
 async function instagramAccountState(country: InstagramCountry): Promise<InstagramAccountState> {

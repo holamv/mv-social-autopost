@@ -48,10 +48,12 @@ export async function graphUpload<T>(
   path: string,
   form: FormData,
   accessToken: string = getEnv().META_GRAPH_ACCESS_TOKEN,
+  timeoutMs?: number,
 ): Promise<T> {
   form.append(ACCESS_TOKEN_PARAM, accessToken)
 
-  const response = await fetch(buildUrl(path), { method: HTTP_METHOD_POST, body: form })
+  const signal = timeoutMs === undefined ? undefined : AbortSignal.timeout(timeoutMs)
+  const response = await fetch(buildUrl(path), { method: HTTP_METHOD_POST, body: form, signal })
 
   return parseResponse<T>(response)
 }

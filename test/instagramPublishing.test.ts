@@ -36,6 +36,7 @@ for (const name of [
 interface GraphCall {
   path: string
   token: string | null
+  timed: boolean
 }
 
 const calls: GraphCall[] = []
@@ -64,7 +65,7 @@ function requestToken(url: URL, init?: RequestInit): string | null {
 globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
   const url = new URL(String(input))
 
-  calls.push({ path: url.pathname, token: requestToken(url, init) })
+  calls.push({ path: url.pathname, token: requestToken(url, init), timed: init?.signal instanceof AbortSignal })
 
   if (graph.rejectPhotos && url.pathname.endsWith('/photos')) {
     return new Response(JSON.stringify({ error: { message: 'Meta rechazo la foto' } }), { status: 400 })
@@ -75,9 +76,10 @@ globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
 
 const { CHANNEL_PUBLISHERS } = await import('../src/core/publishers.ts')
 const { graphGet } = await import('../src/meta/client.ts')
-const { SubmissionError, sourceProperties, submitFromGenerator } = await import('../src/generator/submit.ts')
+const { SubmissionError, copyToFacebook, sourceProperties, submitFromGenerator } = await import('../src/generator/submit.ts')
 const { mirrorToFacebook } = await import('../src/generator/facebookMirror.ts')
 const { toPendingImage } = await import('../src/drive/listPending.ts')
+const { FACEBOOK_COPY_MIN_REMAINING_MS } = await import('../src/config/constants.ts')
 
 const deadline = { remainingMs: () => ENOUGH_TIME_MS, isExpired: () => false }
 
@@ -161,10 +163,11 @@ describe('Facebook copy of a generator post', () => {
     graph.rejectPhotos = false
   })
 
-  it('publishes the Mexico copy on the Mexico page with the Mexico token', async () => {
+  it('publishes the Mexico copy on the Mexico page with the Mexico token and a timeout', async () => {
     assert.equal(await mirrorToFacebook(media, 'Hola', 'MX', deadline), 'page-post')
     assert.ok(calls[0]?.path.endsWith('/page-mexico/photos'))
     assert.equal(calls[0]?.token, MEXICO_TOKEN)
+    assert.equal(calls[0]?.timed, true)
   })
 
   it('publishes the Peru copy on the main page with the main token', async () => {
@@ -185,10 +188,36 @@ describe('Facebook copy of a generator post', () => {
     assert.equal(calls.length, 0)
   })
 
+  it('skips without calling Meta when less than the minimum time for the copy is left', async () => {
+    const almostOver = { remainingMs: () => FACEBOOK_COPY_MIN_REMAINING_MS - 1, isExpired: () => false }
+
+    assert.equal(await mirrorToFacebook(media, 'Hola', 'MX', almostOver), null)
+    assert.equal(calls.length, 0)
+  })
+
   it('returns null instead of failing when Meta rejects the copy', async () => {
     graph.rejectPhotos = true
     assert.equal(await mirrorToFacebook(media, 'Hola', 'MX', deadline), null)
     assert.equal(calls.length, 1)
+  })
+})
+
+describe('copyToFacebook', () => {
+  const submission = { channel: 'instagram', caption: 'Hola', mimeType: 'image/jpeg', dataBase64: 'QQ==' } as const
+  const target = { fileId: 'file-4', name: 'post.jpg', media: Buffer.from('A'), submission, deadline }
+
+  beforeEach(() => {
+    calls.length = 0
+  })
+
+  it('does not copy a LinkedIn post, which has no country', async () => {
+    assert.deepEqual(await copyToFacebook({ ...target, submission: { ...submission, channel: 'linkedin' }, country: null }), {})
+    assert.equal(calls.length, 0)
+  })
+
+  it('answers without a Facebook id when the country has no page', async () => {
+    assert.deepEqual(await copyToFacebook({ ...target, country: 'CO' }), {})
+    assert.equal(calls.length, 0)
   })
 })
 
@@ -197,12 +226,12 @@ describe('Facebook publishing by country', () => {
     calls.length = 0
   })
 
-  it('fails without calling Meta or Drive when the country has no Facebook page', async () => {
+  it('fails before calling Meta when the country has no Facebook page', async () => {
     await assert.rejects(CHANNEL_PUBLISHERS.facebook(pendingImage('CO'), deadline), /META_PAGE_ID_CO/)
     assert.equal(calls.length, 0)
   })
 
-  it('fails without calling Meta or Drive when the stored country is unknown', async () => {
+  it('fails before calling Meta when the stored country is unknown', async () => {
     await assert.rejects(CHANNEL_PUBLISHERS.facebook(pendingImage('AR'), deadline), /AR/)
     assert.equal(calls.length, 0)
   })
