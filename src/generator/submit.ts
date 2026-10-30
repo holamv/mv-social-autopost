@@ -3,14 +3,16 @@ import { z } from 'zod'
 import { getEnv } from '../config/env.js'
 import { BYTES_PER_MEGABYTE, INSTAGRAM_COUNTRY_KEY, MAX_IMAGE_MEGABYTES } from '../config/constants.js'
 import { INSTAGRAM_COUNTRIES, type InstagramCountry } from '../config/instagramAccounts.js'
-import { createDeadline } from '../core/deadline.js'
+import { createDeadline, type Deadline } from '../core/deadline.js'
 import { publishImage } from '../core/pipeline.js'
 import { resolveRoutes } from '../core/routes.js'
 import { getDriveClient } from '../drive/client.js'
 import { getPendingFile } from '../drive/listPending.js'
 import { uploadFile } from '../drive/upload.js'
 import { fetchInstagramUsername, instagramAccountFor } from '../meta/instagram.js'
-import type { ChannelPostIds, PublishRoute, RouteKey } from '../types.js'
+import { mirrorToFacebook, rememberFacebookPost } from './facebookMirror.js'
+import { publishThenCopy } from './publishFlow.js'
+import type { ChannelPostIds, PublishRoute, PublishedImage, RouteKey } from '../types.js'
 
 const GENERATOR_CHANNELS = ['instagram', 'linkedin'] as const
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png']
@@ -111,34 +113,75 @@ async function discardFile(fileId: string): Promise<void> {
   }
 }
 
+function generatorFileName(mimeType: string): string {
+  return `generador-${new Date().toISOString().replace(/[:.]/g, '-')}.${FILE_EXTENSIONS[mimeType]}`
+}
+
+export interface UploadedSubmission {
+  fileId: string
+  name: string
+  media: Buffer
+  submission: Submission
+  country: InstagramCountry | null
+  deadline: Deadline
+}
+
+async function publishUploaded({ fileId, deadline }: UploadedSubmission, route: PublishRoute): Promise<PublishedImage> {
+  const pending = await getPendingFile(fileId)
+
+  if (!pending) {
+    throw new SubmissionError('El archivo subido ya figuraba como publicado', 409)
+  }
+
+  return publishImage(pending, route, deadline)
+}
+
+async function discardAfterFailure({ fileId, submission, country }: UploadedSubmission, error: unknown): Promise<void> {
+  console.error(`[Generator] No se pudo publicar el archivo ${fileId} en ${submission.channel} ${country ?? ''}:`, error)
+  await discardFile(fileId)
+}
+
+export async function copyToFacebook({ fileId, name, media, submission, country, deadline }: UploadedSubmission): Promise<ChannelPostIds> {
+  if (!country) {
+    return {}
+  }
+
+  const image = { fileId, name, mimeType: submission.mimeType, sizeBytes: media.length, buffer: media }
+  const postId = await mirrorToFacebook(image, submission.caption, country, deadline)
+
+  if (!postId) {
+    return {}
+  }
+
+  await rememberFacebookPost(fileId, postId)
+
+  return { facebook: postId }
+}
+
 export async function submitFromGenerator(submission: Submission): Promise<SubmissionResult> {
+  const deadline = createDeadline()
   const country = instagramCountryFor(submission)
   const route = await routeFor(submission.channel)
-  const extension = FILE_EXTENSIONS[submission.mimeType]
+  const media = decodeMedia(submission)
+  const name = generatorFileName(submission.mimeType)
   const uploaded = await uploadFile({
     folderId: route.sourceFolderId,
-    name: `generador-${new Date().toISOString().replace(/[:.]/g, '-')}.${extension}`,
+    name,
     mimeType: submission.mimeType,
-    body: Readable.from(decodeMedia(submission)),
+    body: Readable.from(media),
     appProperties: sourceProperties(country),
     description: submission.caption,
   })
 
-  try {
-    const pending = await getPendingFile(uploaded.id)
+  const target = { fileId: uploaded.id, name, media, submission, country, deadline }
+  const postIds = await publishThenCopy({
+    fileId: uploaded.id,
+    publish: () => publishUploaded(target, route),
+    discard: (error) => discardAfterFailure(target, error),
+    copy: () => copyToFacebook(target),
+  })
 
-    if (!pending) {
-      throw new SubmissionError('El archivo subido ya figuraba como publicado', 409)
-    }
-
-    const published = await publishImage(pending, route, createDeadline())
-
-    return { fileId: uploaded.id, postIds: published.postIds }
-  } catch (error) {
-    console.error(`[Generator] No se pudo publicar el archivo ${uploaded.id} en ${submission.channel} ${country ?? ''}:`, error)
-    await discardFile(uploaded.id)
-    throw error
-  }
+  return { fileId: uploaded.id, postIds }
 }
 
 async function instagramAccountState(country: InstagramCountry): Promise<InstagramAccountState> {
