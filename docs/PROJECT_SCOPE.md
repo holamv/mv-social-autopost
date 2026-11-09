@@ -1,8 +1,8 @@
 # PROJECT_SCOPE - mv-social-autopost
 
-**Version:** 1.4.1
+**Version:** 1.5.0
 **Estado:** base funcional, sin desplegar
-**Ultima actualizacion:** 2026-10-01
+**Ultima actualizacion:** 2026-11-09
 
 ## Objetivo
 
@@ -41,6 +41,7 @@ Fuera del alcance por ahora:
 | YouTube Shorts (`YouTube/`, subida en streaming desde Drive, `/conectar-youtube`) | done (falta cliente OAuth y conectar el canal) |
 | Endpoint `GET /api/metrics` para el panel viral del plan de contenidos (FB, IG, YouTube, TikTok) | done (lo lee tambien el data lake para los KPIs #693-#702) |
 | Seguidores por red en `GET /api/metrics` (`data.followers`, KPI #702) y alcance y compartidos de Instagram (#694, #695) | done (TikTok falta el scope `user.info.stats`) |
+| `GET /api/metrics?scope=likes`: solo likes de Instagram y Facebook de PE, MX y CO, y de YouTube y TikTok, con el pais de cada publicacion | done (lo lee el panel viral del plan de contenidos cada 5 min) |
 | Alcance de Facebook con `post_total_media_view_unique` (Meta dio de baja `post_impressions_unique`) | done |
 | Reporte semanal de contenido en Discord (lunes 09:00 Lima): KPIs #693-#702 de la semana cerrada vs la anterior y vs baseline de exp-2026-058 | done (falta `DATALAKE_API_TOKEN` y `DISCORD_REPORT_CHANNEL_ID`) |
 | `/generar-video`: video con Higgsfield que queda en `LinkedIn/`, `TikTok/` o `YouTube/` de Drive | 🚧 WIP (codigo listo; falta cargar variables en Vercel, registrar el comando y probar con un pedido real) |
@@ -72,6 +73,9 @@ api/cron/weekly-report.ts  Reporte de los lunes, protegido con CRON_SECRET
 src/report/weeklyKpis.ts   Lectura de /api/dris/weekly-evolution del data lake
 src/report/contentReport.ts  Texto del reporte (semana cerrada, cambio, historia)
 src/metrics/collect.ts     Lee las cuatro redes y junta los resultados
+src/metrics/likes.ts       Solo likes, por cuenta de Instagram y pagina de Facebook de cada pais (scope=likes)
+src/metrics/likesPlan.ts   Arma las fuentes de scope=likes: Meta por pais, YouTube y TikTok
+src/metrics/errors.ts      Texto de un error para `failures`
 src/metrics/meta.ts        Posts de la pagina y media de Instagram con insights, y seguidores
 src/metrics/youtube.ts     Subidas del canal conectado, sus estadisticas y suscriptores
 src/metrics/tiktok.ts      Videos de la cuenta conectada (video.list) y seguidores (user/info)
@@ -157,6 +161,19 @@ vercel.json                Cron y limites
 | Meta Graph API v21.0 | `/{page}/photos`, `/{ig-user}/media`, `/{ig-user}/media_publish`, `/{page}/posts` e insights (metricas) |
 
 ## Decisiones tecnicas
+
+- **`scope=likes` es opcional y la respuesta de siempre no cambia:** el data lake lee
+  `GET /api/metrics` sin parametros para los KPIs #693-#702, que miden la cuenta
+  principal. Sumarle las cuentas de Mexico y Colombia ahi le cambiaria los numeros. El
+  panel viral pide `?scope=likes` y recibe
+  `{ updatedAt, sources, failures, missing, posts: [{ network, country, url, publishedAt, metrics: { likes } }] }`.
+  `country` es `PE`, `MX` o `CO` para Instagram y Facebook, y `null` para YouTube y
+  TikTok, que son una sola cuenta de marca. `sources`, `failures` y `missing` usan ids
+  como `instagram-MX` o `youtube`. Una cuenta sin configurar va a `missing` y una que
+  falla va a `failures`: en los dos casos las demas llegan igual.
+- **`scope=likes` no pide insights:** una llamada por cuenta en vez de una por
+  publicacion. El panel lo consulta cada 5 minutos, y con insights serian cientos de
+  llamadas por consulta a la Graph API.
 
 - **Facebook por binario, Instagram por URL:** Facebook acepta `multipart/form-data`,
   asi que recibe el Buffer directo y no depende de que este servidor sea alcanzable.
