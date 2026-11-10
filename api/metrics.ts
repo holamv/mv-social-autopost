@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getEnv } from '../src/config/env.js'
 import { collectMetrics } from '../src/metrics/collect.js'
+import { collectAllLikes } from '../src/metrics/likesPlan.js'
 import {
   AUTHORIZATION_HEADER,
   BEARER_PREFIX,
@@ -19,6 +20,7 @@ const METHOD_MESSAGE = 'Metodo no permitido'
 const CONFIG_MESSAGE = 'Configuracion invalida del servicio'
 const DISABLED_MESSAGE = 'Falta METRICS_API_TOKEN: el endpoint de metricas esta apagado'
 const COLLECT_MESSAGE = 'No se pudieron leer las metricas'
+const LIKES_SCOPE = 'likes'
 
 function digest(value: string): Uint8Array {
   return new Uint8Array(createHash(SIGNATURE_ALGORITHM).update(value).digest())
@@ -65,7 +67,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
 
   try {
-    response.status(HTTP_OK).json({ success: true, data: await collectMetrics() })
+    const data = request.query.scope === LIKES_SCOPE ? await collectAllLikes() : await collectMetrics()
+    response.status(HTTP_OK).json({ success: true, data })
   } catch (error) {
     console.error('[Metrics] Error leyendo las redes:', error)
     response.status(HTTP_INTERNAL_ERROR).json({ success: false, data: null, error: COLLECT_MESSAGE })

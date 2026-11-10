@@ -1,3 +1,4 @@
+import { describeError } from './errors.js'
 import { collectFacebook, collectInstagram, readFacebookFollowers, readInstagramFollowers } from './meta.js'
 import { collectTikTok, readTikTokFollowers } from './tiktok.js'
 import { collectYouTube, readYouTubeSubscribers } from './youtube.js'
@@ -15,10 +16,6 @@ const FOLLOWER_READERS: Record<MetricsNetwork, () => Promise<number | null>> = {
   instagram: readInstagramFollowers,
   youtube: readYouTubeSubscribers,
   tiktok: readTikTokFollowers,
-}
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 async function readFollowerCounts(networks: MetricsNetwork[]): Promise<FollowerCounts> {
